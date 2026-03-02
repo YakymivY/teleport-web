@@ -1,8 +1,16 @@
-import React, { useRef } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import React, { useRef, useState } from 'react';
 import './Login.css';
 
 export function Login() {
   const codeInputsRef = useRef<Array<HTMLInputElement | null>>([]);
+
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [emailError, setEmailError] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleCodeChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
@@ -19,13 +27,48 @@ export function Login() {
     }
   };
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (emailError) {
+      setEmailError(false);
+    }
+  };
+
+  const handleEmailSend = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
+      setEmailError(true);
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API_URL}/auth/magic-link`, { email: trimmedEmail });
+      if (response.status === 201) {
+        toast.success('Magic link has been sent to your email.');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
+        setEmailError(true);
+      } else {
+        toast.error('An unexpected error occurred while sending the magic link.');
+      }
+    }
+  };
+
   return (
     <div className="login-container">
       <div className="login-content">
         <div className="login-input-row">
-          <input className="login-input" type="text" placeholder="email" autoComplete="off" />
-          <button className="login-button" type="button">
-            Send
+          <input
+            className={`login-input${emailError ? ' login-input-error' : ''}`}
+            type="text"
+            placeholder="email"
+            autoComplete="off"
+            value={email}
+            onChange={handleEmailChange}
+          />
+          <button className="login-button" type="button" onClick={handleEmailSend}>
+            send
           </button>
         </div>
         <p className="login-or">- or -</p>
@@ -47,7 +90,7 @@ export function Login() {
             ))}
           </div>
           <button className="login-button login-button-code" type="button">
-            Verify
+            verify
           </button>
         </div>
       </div>
