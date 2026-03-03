@@ -28,13 +28,15 @@ export function WaitingScreen() {
 
         localStorage.setItem('token', parsedData.token);
 
+        // navigate to main page on success
         setTimeout(() => {
           eventSource.close();
           navigate('/');
         }, 2000)
       } else {
+        // close the SSE connection and show an error toast
+        setStatus('Verification failed. Please try again.');
         eventSource.close();
-        toast.error('Verification failed. Please try again.');
       }
     };
 
@@ -47,9 +49,17 @@ export function WaitingScreen() {
   }, [navigate]);
 
   return (
-    <div>
-      <h1>{status}</h1>
-      <button type="button" onClick={() => navigate('/login')}>Back to login</button>
+    <div className="waiting-container">
+      <div className="waiting-content">
+        <h1 className="waiting-title">{status}</h1>
+        <button
+          type="button"
+          className="waiting-button"
+          onClick={() => navigate('/login')}
+        >
+          back to login
+        </button>
+      </div>
     </div>
   );
 }

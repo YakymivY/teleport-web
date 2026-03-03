@@ -1,0 +1,46 @@
+ .waiting-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.waiting-content {
+  padding: 2rem;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  outline: 2px solid #e0cffa;
+  outline-offset: 1rem;
+}
+
+.waiting-title {
+  margin: 0;
+  font-size: 1.4rem;
+  text-align: center;
+  color: gray;
+}
+
+.waiting-button {
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  background-color: #a16fec;
+  color: white;
+  transition: background 0.2s ease;
+}
+
+.waiting-button:hover {
+  background-color: #8b5bd3;
+}
+
+.waiting-button:active {
+  background-color: #7a4fc0;
+}
