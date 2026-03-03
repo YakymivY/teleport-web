@@ -13,10 +13,11 @@ export function WaitingScreen() {
 
     // get the session ID from local storage
     const sessionId = localStorage.getItem('sessionId');
-    if (!sessionId) return () => {
+    if (!sessionId) {
       toast.error('Session ID not found. Please try again.');
       navigate('/login');
-    };
+      return;
+    }
 
     // create an SSE connection to the backend
     const eventSource = new EventSource(`${API_URL}/auth-sse/sse-verify/${sessionId}`);

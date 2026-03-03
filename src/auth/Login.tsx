@@ -12,6 +12,7 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [emailError, setEmailError] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -45,6 +46,8 @@ export function Login() {
     }
 
     try {
+      setIsSending(true);
+
       // generate a new session ID if one doesn't exist and save it
       const sessionId = localStorage.getItem('sessionId') || uuidv4();
       localStorage.setItem('sessionId', sessionId);
@@ -56,6 +59,8 @@ export function Login() {
         navigate('/waiting');
       }
     } catch (error) {
+      setIsSending(false);
+      setEmail('');
       if (axios.isAxiosError(error) && error.response?.status === 400) {
         setEmailError(true);
       } else {
@@ -76,7 +81,12 @@ export function Login() {
             value={email}
             onChange={handleEmailChange}
           />
-          <button className="login-button" type="button" onClick={handleEmailSend}>
+          <button
+            className="login-button"
+            type="button"
+            onClick={handleEmailSend}
+            disabled={isSending}
+          >
             send
           </button>
         </div>

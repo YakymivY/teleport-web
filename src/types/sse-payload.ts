@@ -1,4 +1,5 @@
 export interface SsePayload {
-  status: 'verified' | 'expired';
+  status: 'verified' | 'expired' | 'error';
   token?: string;
+  message?: string;
 }

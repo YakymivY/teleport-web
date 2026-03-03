@@ -104,6 +104,10 @@
   background-color: #7a4fc0;
 }
 
+.login-button:disabled {
+  background-color: lightgray;
+}
+
 .login-button-code {
   padding-inline: 1.1rem;
 }
