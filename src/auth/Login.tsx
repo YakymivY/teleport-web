@@ -1,10 +1,13 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import React, { useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import './Login.css';
+import { useNavigate } from 'react-router-dom';
 
 export function Login() {
   const codeInputsRef = useRef<Array<HTMLInputElement | null>>([]);
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -42,9 +45,15 @@ export function Login() {
     }
 
     try {
-      const response = await axios.post(`${API_URL}/auth/magic-link`, { email: trimmedEmail });
+      // generate a new session ID if one doesn't exist and save it
+      const sessionId = localStorage.getItem('sessionId') || uuidv4();
+      localStorage.setItem('sessionId', sessionId);
+
+      const response = await axios.post(`${API_URL}/auth/magic-link`, { email: trimmedEmail, sessionId });
       if (response.status === 201) {
         toast.success('Magic link has been sent to your email.');
+        setEmail('');
+        navigate('/waiting');
       }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 400) {
