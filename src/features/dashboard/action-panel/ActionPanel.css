@@ -1,0 +1,4 @@
+.action-panel-container {
+  grid-area: action-panel;
+  background-color: #e0cffa;
+}

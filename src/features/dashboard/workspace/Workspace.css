@@ -1,0 +1,4 @@
+.workspace-container {
+  grid-area: workspace;
+  background-color: lightgray;
+}

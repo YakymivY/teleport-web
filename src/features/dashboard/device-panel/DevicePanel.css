@@ -1,0 +1,4 @@
+.device-panel-container {
+  grid-area: device-panel;
+  background-color: grey;
+}
