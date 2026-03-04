@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import type { SsePayload } from "../types/sse-payload";
+import type { SsePayload } from "../../types/sse-payload";
 import './WaitingScreen.css';
 
 export function WaitingScreen() {

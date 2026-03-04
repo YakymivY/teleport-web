@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { calculateTotalParts } from "../utils/fileUtils";
+import { calculateTotalParts } from "../../utils/fileUtils";
 
 const JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTIyMTk2Mi1hNDk1LTRlZGMtYTA5ZS01OGQyMWE0ZjZhNGMiLCJ1aWQiOiJmOGFkNzYzOC03ZWJkLTQzZTUtYmFhOS1mNTJhYmIzMDkyNDYiLCJ0eXBlIjoiZGV2aWNlIiwiaWF0IjoxNzY5OTU1ODAyLCJleHAiOjE3ODU1MDc4MDJ9.dBGmVp8e33rR1G-w-HDcQyK02-nppNLx8J68EBgXjRo';
 const BASE_URL = 'http://localhost:3000';

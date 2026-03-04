@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { Home } from './home/Home';
-import { Login } from './auth/Login';
-import { WaitingScreen } from './auth/WaitingScreen';
+import { Home } from './features/home/Home';
+import { Login } from './features/auth/Login';
+import { WaitingScreen } from './features/auth/WaitingScreen';
 import { AppToaster } from './ui/toast';
 import './App.css'
 
