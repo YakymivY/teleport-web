@@ -31,3 +31,10 @@
   width: 1.5rem;
   height: 1.5rem;
 }
+
+.action-panel-button-letter {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #a16fec;
+  transition: color 0.2s ease;
+}
