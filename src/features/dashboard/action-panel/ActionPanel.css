@@ -1,4 +1,33 @@
 .action-panel-container {
   grid-area: action-panel;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.action-panel-button {
+  width: 2.2rem;
+  height: 2.2rem;
+  background-color: transparent;
+  border-radius: 0.5rem;
+  border: 3px solid #e0cffa;
+  transition: 0.2s background-color ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.action-panel-button:hover {
   background-color: #e0cffa;
+}
+
+.action-panel-button:active {
+  border-color: #a16fec;
+}
+
+.action-panel-button-icon {
+  width: 1.5rem;
+  height: 1.5rem;
 }

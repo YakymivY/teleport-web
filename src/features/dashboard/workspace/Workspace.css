@@ -1,4 +1,8 @@
 .workspace-container {
   grid-area: workspace;
-  background-color: lightgray;
+  border-radius: 1rem;
+  border: 3px solid #e0cffa;
+  outline-offset: 3px;
+  outline: 2px solid #e0cffa;
+  margin: 5px;
 }

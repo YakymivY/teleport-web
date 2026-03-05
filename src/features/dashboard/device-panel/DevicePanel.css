@@ -1,4 +1,8 @@
 .device-panel-container {
   grid-area: device-panel;
-  background-color: grey;
+  background-color: #e0cffa;
+  border-radius: 1rem;
+  outline: 2px solid #e0cffa;
+  margin: 2px;
+  border: 3px solid white;
 }
