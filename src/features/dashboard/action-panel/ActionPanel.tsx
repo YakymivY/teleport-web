@@ -11,19 +11,18 @@ export function ActionPanel() {
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const handleLogout = async () => {
+  const cleanupAndRedirect = () => {
+    localStorage.removeItem('token');
+    setIsModalOpen(false);
+    navigate('/login', { replace: true });
+  };
+
+  const logout = async (endpoint: string) => {
     const token = localStorage.getItem('token');
 
-    const cleanupAndRedirect = () => {
-      localStorage.removeItem('token');
-      setIsModalOpen(false);
-      navigate('/login', { replace: true });
-    };
-
-    // Best-effort server logout: even if this fails, we still clear local auth and redirect.
     try {
       await axios.post(
-        `${API_URL}/auth/logout`,
+        `${API_URL}${endpoint}`,
         {},
         {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -36,6 +35,9 @@ export function ActionPanel() {
 
     cleanupAndRedirect();
   };
+
+  const handleLogout = () => logout('/auth/logout');
+  const handleLogoutEverywhere = () => logout('/auth/logout-all');
 
   return (
     <div className="action-panel-container">
@@ -55,7 +57,11 @@ export function ActionPanel() {
           >
             <span className="action-panel-button-letter">log out</span>
           </button>
-          <button className="action-panel-button action-panel-modal-button action-panel-modal-button--secondary">
+          <button
+            className="action-panel-button action-panel-modal-button action-panel-modal-button--secondary"
+            type="button"
+            onClick={handleLogoutEverywhere}
+          >
             <span className="action-panel-button-letter">log out everywhere</span>
           </button>
         </div>
