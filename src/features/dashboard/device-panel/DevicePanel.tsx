@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import type { Device } from '../../../types/device';
+import type { Device } from './types/types';
+import { AddButton } from './add-button/AddButton';
 import './DevicePanel.css';
 
 export function DevicePanel() {
@@ -52,6 +53,7 @@ export function DevicePanel() {
             {device.name}
           </div>
         ))}
+        <AddButton />
       </div>
     </div>
   );
