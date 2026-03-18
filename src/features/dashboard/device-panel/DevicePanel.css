@@ -5,4 +5,34 @@
   outline: 2px solid #e0cffa;
   margin: 2px;
   border: 3px solid white;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.device-panel-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #a16fec;
+}
+
+.device-panel-state {
+  font-size: 14px;
+  opacity: 0.9;
+  color: gray;
+}
+
+.device-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.device-panel-device {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: gray;
 }
