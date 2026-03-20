@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import type { SsePayload } from "../../types/sse-payload";
+import { getSseVerifyUrl } from './api/auth.api';
 import './WaitingScreen.css';
 
 export function WaitingScreen() {
@@ -9,8 +10,6 @@ export function WaitingScreen() {
   const [status, setStatus] = useState('Waiting for email confirmation...');
 
   useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL;
-
     // get the session ID from local storage
     const sessionId = localStorage.getItem('sessionId');
     if (!sessionId) {
@@ -20,7 +19,7 @@ export function WaitingScreen() {
     }
 
     // create an SSE connection to the backend
-    const eventSource = new EventSource(`${API_URL}/auth-sse/sse-verify/${sessionId}`);
+    const eventSource = new EventSource(getSseVerifyUrl(sessionId));
     eventSource.onmessage = (event) => {
       const parsedData = JSON.parse(event.data) as SsePayload;
 

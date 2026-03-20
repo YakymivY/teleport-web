@@ -1,46 +1,41 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import type { Device } from './types/types';
-import { AddButton } from './add-button/AddButton';
+import { AddButton } from './components/add-button/AddButton';
+import { fetchDevices } from './api/device-panel.api';
 import './DevicePanel.css';
 
 export function DevicePanel() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    let isMounted = true;
+    let cancelled = false;
 
-    const fetchDevices = async () => {
+    const loadDevices = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get<Device[]>(`${API_URL}/devices`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
-
-        if (!isMounted) return;
-        setDevices(response.data);
+        const devices = await fetchDevices();
+        if (cancelled) return;
+        setDevices(devices);
       } catch {
-        if (!isMounted) return;
+        if (cancelled) return;
         setError('Failed to load devices.');
       } finally {
-        if (isMounted) {
+        if (!cancelled) {
           setLoading(false);
         }
       }
     };
 
-    fetchDevices();
+    void loadDevices();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [API_URL]);
+  }, []);
 
   return (
     <div className="device-panel-container">

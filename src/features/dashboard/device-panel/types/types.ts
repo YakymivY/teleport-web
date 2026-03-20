@@ -5,7 +5,7 @@ export interface Device {
   lastSeenAt: Date | null;
 }
 
-export interface DevicePairingResponse {
+export interface StartPairingResponseDto {
   code: string;
   expiresIn: number;
 }

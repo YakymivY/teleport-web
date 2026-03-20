@@ -1,15 +1,14 @@
-import axios from 'axios';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../ui/Modal';
 import plusIcon from '../../../assets/plus-icon.png';
+import { logout } from './api/action-panel.api';
 import './ActionPanel.css';
 
 export function ActionPanel() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const logoutButtonRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL;
 
   const cleanupAndRedirect = () => {
     localStorage.removeItem('token');
@@ -17,17 +16,9 @@ export function ActionPanel() {
     navigate('/login', { replace: true });
   };
 
-  const logout = async (endpoint: string) => {
-    const token = localStorage.getItem('token');
-
+  const handleLogout = async (endpoint: '/auth/logout' | '/auth/logout-all') => {
     try {
-      await axios.post(
-        `${API_URL}${endpoint}`,
-        {},
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        }
-      );
+      await logout(endpoint);
     } catch {
       cleanupAndRedirect();
       return;
@@ -36,8 +27,8 @@ export function ActionPanel() {
     cleanupAndRedirect();
   };
 
-  const handleLogout = () => logout('/auth/logout');
-  const handleLogoutEverywhere = () => logout('/auth/logout-all');
+  const logoutCurrentSession = () => void handleLogout('/auth/logout');
+  const logoutAllSessions = () => void handleLogout('/auth/logout-all');
 
   return (
     <div className="action-panel-container">
@@ -53,14 +44,14 @@ export function ActionPanel() {
           <button
             className="action-panel-button action-panel-modal-button action-panel-modal-button--primary"
             type="button"
-            onClick={handleLogout}
+            onClick={logoutCurrentSession}
           >
             <span className="action-panel-button-letter">log out</span>
           </button>
           <button
             className="action-panel-button action-panel-modal-button action-panel-modal-button--secondary"
             type="button"
-            onClick={handleLogoutEverywhere}
+            onClick={logoutAllSessions}
           >
             <span className="action-panel-button-letter">log out everywhere</span>
           </button>

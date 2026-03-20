@@ -1,15 +1,13 @@
-import axios from "axios";
 import toast from "react-hot-toast";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { verifyPairingCode } from '../../api/auth.api';
 import './CodeField.css';
 
 export function CodeField() {
   const navigate = useNavigate();
   const codeInputsRef = useRef<Array<HTMLInputElement | null>>([]);
   const [isPairing, setIsPairing] = useState(false);
-
-  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleCodeChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
@@ -46,10 +44,9 @@ export function CodeField() {
 
     try {
       setIsPairing(true);
-      const response = await axios.post(`${API_URL}/devices/pairing/verify`, { code: enteredCode });
+      const data = await verifyPairingCode(enteredCode);
 
-      // get token from response and save it
-      const deviceToken = response.data?.deviceToken;
+      const deviceToken = data?.deviceToken;
       if (!deviceToken) {
         throw new Error('Missing device token in response');
       }
