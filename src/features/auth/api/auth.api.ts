@@ -1,15 +1,14 @@
-import axios from 'axios';
+import { apiClient } from '../../../api/apiClient';
 
 export async function requestMagicLink(email: string, sessionId: string) {
-  const API_URL = import.meta.env.VITE_API_URL;
-  return axios.post(`${API_URL}/auth/magic-link`, { email, sessionId });
+  return apiClient.post('/auth/magic-link', { email, sessionId });
 }
 
 export async function verifyPairingCode(code: string) {
-  const API_URL = import.meta.env.VITE_API_URL;
-  const response = await axios.post<{ deviceToken?: string }>(`${API_URL}/devices/pairing/verify`, {
-    code,
-  });
+  const response = await apiClient.post<{ deviceToken?: string }>(
+    '/devices/pairing/verify',
+    { code }
+  );
   return response.data;
 }
 

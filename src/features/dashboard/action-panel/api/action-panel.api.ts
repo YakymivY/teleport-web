@@ -1,18 +1,6 @@
-import axios from 'axios';
-
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-}
+import { apiClient } from '../../../../api/apiClient';
 
 export async function logout(endpoint: '/auth/logout' | '/auth/logout-all') {
-  const API_URL = import.meta.env.VITE_API_URL;
-  const response = await axios.post(
-    `${API_URL}${endpoint}`,
-    {},
-    {
-      headers: getAuthHeaders(),
-    }
-  );
+  const response = await apiClient.post(endpoint, {});
   return response.data;
 }

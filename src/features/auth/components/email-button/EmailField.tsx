@@ -2,7 +2,7 @@ import toast from "react-hot-toast";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 import { requestMagicLink } from '../../api/auth.api';
 import './EmailField.css';
 
@@ -43,7 +43,7 @@ export function EmailField() {
     } catch (error) {
       setIsSending(false);
       setEmail('');
-      if (axios.isAxiosError(error) && error.response?.status === 400) {
+      if (isAxiosError(error) && error.response?.status === 400) {
         setEmailError(true);
       } else {
         toast.error('An unexpected error occurred while sending the magic link.');
