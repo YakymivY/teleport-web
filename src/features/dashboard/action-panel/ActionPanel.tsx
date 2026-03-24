@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
+import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../ui/Modal';
-import plusIcon from '../../../assets/plus-icon.png';
 import { logout } from './api/action-panel.api';
 import './ActionPanel.css';
 
@@ -32,12 +32,16 @@ export function ActionPanel() {
 
   return (
     <div className="action-panel-container">
-      <button className="action-panel-button">
-        <img src={plusIcon} alt="plus" className="action-panel-button-icon" />
-      </button>
+      <button className="action-panel-button"></button>
       <button className="action-panel-button"></button>
       <button ref={logoutButtonRef} className="action-panel-button" onClick={() => setIsModalOpen(true)}>
-        <span className="action-panel-button-letter">L</span>
+        <LogOut
+          className="action-panel-button-icon"
+          size={20}
+          strokeWidth={2.3}
+          absoluteStrokeWidth
+          aria-hidden="true"
+        />
       </button>
       <Modal anchorRef={logoutButtonRef} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="action-panel-modal-buttons">

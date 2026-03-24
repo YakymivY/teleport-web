@@ -28,8 +28,17 @@
 }
 
 .action-panel-button-icon {
-  width: 1.5rem;
-  height: 1.5rem;
+  display: block;
+  color: #a16fec;
+  transition: color 0.2s ease;
+}
+
+.action-panel-button:hover .action-panel-button-icon {
+  color: #8b5bd3;
+}
+
+.action-panel-button:active .action-panel-button-icon {
+  color: #7a4fc0;
 }
 
 .action-panel-button-letter {
