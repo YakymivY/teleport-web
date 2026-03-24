@@ -1,5 +1,7 @@
 import type { Device } from '../types/types';
+import type { RenameDeviceDto } from '../types/types';
 import type { StartPairingResponseDto } from '../types/types';
+import type { UserDeviceDto } from '../types/types';
 import { apiClient } from '../../../../api/apiClient';
 
 export async function fetchDevices(): Promise<Device[]> {
@@ -13,4 +15,15 @@ export async function startPairing(): Promise<StartPairingResponseDto> {
     { method: 'digit_code' }
   );
   return response.data;
+}
+
+export async function renameDevice(payload: RenameDeviceDto): Promise<Device> {
+  const response = await apiClient.patch<UserDeviceDto>('/devices/rename', payload);
+  const { id, name, createdAt, lastSeenAt } = response.data;
+  return {
+    id,
+    name,
+    createdAt: new Date(createdAt),
+    lastSeenAt: lastSeenAt ? new Date(lastSeenAt) : null,
+  };
 }

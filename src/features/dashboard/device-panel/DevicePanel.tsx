@@ -1,13 +1,18 @@
+import { Pen } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import type { Device } from './types/types';
 import { AddButton } from './components/add-button/AddButton';
-import { fetchDevices } from './api/device-panel.api';
+import { fetchDevices, renameDevice } from './api/device-panel.api';
 import './DevicePanel.css';
 
 export function DevicePanel() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [renameLoading, setRenameLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,17 +42,87 @@ export function DevicePanel() {
     };
   }, []);
 
+  const startEditing = (device: Device) => {
+    setEditingDeviceId(device.id);
+    setEditingName(device.name);
+  };
+
+  const handleRename = async () => {
+    if (!editingDeviceId) return;
+
+    const nextName = editingName.trim();
+    if (!nextName) {
+      toast.error('Device name cannot be empty.');
+      return;
+    }
+
+    setRenameLoading(true);
+    setError(null);
+
+    try {
+      const renamedDevice = await renameDevice({ id: editingDeviceId, name: nextName });
+      setDevices((prev) =>
+        prev.map((device) => (device.id === renamedDevice.id ? renamedDevice : device))
+      );
+      setEditingDeviceId(null);
+      setEditingName('');
+    } catch {
+      toast.error('Failed to rename device.');
+    } finally {
+      setRenameLoading(false);
+    }
+  };
+
   return (
     <div className="device-panel-container">
       <div className="device-panel-title">your devices</div>
       {loading ? <div className="device-panel-state"><i>Loading…</i></div> : null}
       {error ? <div className="device-panel-state"><i>{error}</i></div> : null}
       <div className="device-panel-list">
-        {devices.map((device) => (
-          <div key={device.id} className="device-panel-device">
-            {device.name}
-          </div>
-        ))}
+        {devices.map((device) => {
+          const isEditing = editingDeviceId === device.id;
+
+          return (
+            <div key={device.id} className="device-panel-device">
+              {isEditing ? (
+                <>
+                  <input
+                    className="device-panel-rename-input"
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setEditingDeviceId(null);
+                    }}
+                  />
+                  <button
+                    className="device-panel-rename-action-button"
+                    type="button"
+                    onClick={() => {
+                      void handleRename();
+                    }}
+                    disabled={renameLoading}
+                  >
+                    {renameLoading ? 'renaming…' : 'rename'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="device-panel-device-name">{device.name}</div>
+                  <button
+                    className="device-panel-rename-button"
+                    type="button"
+                    aria-label={`Rename ${device.name}`}
+                    onClick={() => startEditing(device)}
+                  >
+                    <Pen size={18} />
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        })}
         <AddButton />
       </div>
     </div>
