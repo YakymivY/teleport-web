@@ -14,6 +14,10 @@ export interface RenameDeviceDto {
   name: string;
 }
 
+export interface DeleteDeviceDto {
+  id: string;
+}
+
 export interface UserDeviceDto {
   id: string;
   name: string;

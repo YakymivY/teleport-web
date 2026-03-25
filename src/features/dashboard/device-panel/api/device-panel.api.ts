@@ -1,4 +1,5 @@
 import type { Device } from '../types/types';
+import type { DeleteDeviceDto } from '../types/types';
 import type { RenameDeviceDto } from '../types/types';
 import type { StartPairingResponseDto } from '../types/types';
 import type { UserDeviceDto } from '../types/types';
@@ -26,4 +27,8 @@ export async function renameDevice(payload: RenameDeviceDto): Promise<Device> {
     createdAt: new Date(createdAt),
     lastSeenAt: lastSeenAt ? new Date(lastSeenAt) : null,
   };
+}
+
+export async function deleteDevice(payload: DeleteDeviceDto): Promise<void> {
+  await apiClient.delete('/devices/delete', { data: payload });
 }

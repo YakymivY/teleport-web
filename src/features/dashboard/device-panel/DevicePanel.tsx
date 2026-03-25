@@ -1,9 +1,9 @@
-import { Pen } from 'lucide-react';
+import { Pen, Trash } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { Device } from './types/types';
 import { AddButton } from './components/add-button/AddButton';
-import { fetchDevices, renameDevice } from './api/device-panel.api';
+import { deleteDevice, fetchDevices, renameDevice } from './api/device-panel.api';
 import './DevicePanel.css';
 
 export function DevicePanel() {
@@ -13,6 +13,7 @@ export function DevicePanel() {
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [renameLoading, setRenameLoading] = useState(false);
+  const [deleteLoadingDeviceId, setDeleteLoadingDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,10 +67,30 @@ export function DevicePanel() {
       );
       setEditingDeviceId(null);
       setEditingName('');
+      toast.success('Device renamed successfully.');
     } catch {
       toast.error('Failed to rename device.');
     } finally {
       setRenameLoading(false);
+    }
+  };
+
+  const handleDelete = async (deviceId: string) => {
+    setDeleteLoadingDeviceId(deviceId);
+
+    try {
+      await deleteDevice({ id: deviceId });
+      setDevices((prev) => prev.filter((device) => device.id !== deviceId));
+
+      if (editingDeviceId === deviceId) {
+        setEditingDeviceId(null);
+        setEditingName('');
+      }
+      toast.success('Device deleted successfully.');
+    } catch {
+      toast.error('Failed to delete device.');
+    } finally {
+      setDeleteLoadingDeviceId(null);
     }
   };
 
@@ -110,14 +131,28 @@ export function DevicePanel() {
               ) : (
                 <>
                   <div className="device-panel-device-name">{device.name}</div>
-                  <button
-                    className="device-panel-rename-button"
-                    type="button"
-                    aria-label={`Rename ${device.name}`}
-                    onClick={() => startEditing(device)}
-                  >
-                    <Pen size={18} />
-                  </button>
+                  <div className="device-panel-actions">
+                    <button
+                      className="device-panel-rename-button"
+                      type="button"
+                      aria-label={`Rename ${device.name}`}
+                      onClick={() => startEditing(device)}
+                    >
+                      <Pen size={18} />
+                    </button>
+                    <button
+                      className="device-panel-delete-button"
+                      type="button"
+                      aria-label={`Delete ${device.name}`}
+                      aria-busy={deleteLoadingDeviceId === device.id}
+                      disabled={deleteLoadingDeviceId === device.id}
+                      onClick={() => {
+                        void handleDelete(device.id);
+                      }}
+                    >
+                      <Trash size={18} />
+                    </button>
+                  </div>
                 </>
               )}
             </div>
