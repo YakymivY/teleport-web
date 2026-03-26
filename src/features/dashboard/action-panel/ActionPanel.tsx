@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../ui/Modal';
 import { logout } from './api/action-panel.api';
@@ -32,7 +32,15 @@ export function ActionPanel() {
 
   return (
     <div className="action-panel-container">
-      <button className="action-panel-button"></button>
+      <button className="action-panel-button action-panel-button--upload" type="button" aria-label="Upload file">
+        <Upload
+          className="action-panel-button-icon action-panel-button-icon--upload"
+          size={20}
+          strokeWidth={2.3}
+          absoluteStrokeWidth
+          aria-hidden="true"
+        />
+      </button>
       <button className="action-panel-button"></button>
       <button ref={logoutButtonRef} className="action-panel-button" onClick={() => setIsModalOpen(true)}>
         <LogOut
