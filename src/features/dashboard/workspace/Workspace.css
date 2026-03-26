@@ -5,4 +5,30 @@
   outline-offset: 3px;
   outline: 2px solid #e0cffa;
   margin: 5px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.workspace-divider {
+  height: 1px;
+  width: 100%;
+  background: #e0cffa;
+  flex: 0 0 auto;
+}
+
+.workspace-section {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-section__content {
+  flex: 1 1 0;
+  min-height: 0;
+  border-radius: 0.75rem;
+  background: rgb(242, 242, 242);
 }

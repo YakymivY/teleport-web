@@ -86,9 +86,9 @@ export function DevicePanel() {
         setEditingDeviceId(null);
         setEditingName('');
       }
-      toast.success('Device deleted successfully.');
+      toast.success('Device removed successfully.');
     } catch {
-      toast.error('Failed to delete device.');
+      toast.error('Failed to remove device.');
     } finally {
       setDeleteLoadingDeviceId(null);
     }
