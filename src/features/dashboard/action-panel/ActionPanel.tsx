@@ -1,12 +1,14 @@
-import { useRef, useState } from 'react';
+import { type ChangeEvent, useRef, useState } from 'react';
 import { LogOut, Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../ui/Modal';
-import { logout } from './api/action-panel.api';
+import { confirmUpload, logout, requestUploadSingle, uploadFileToPresignedUrl } from './api/action-panel.api';
 import './ActionPanel.css';
 
 export function ActionPanel() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const logoutButtonRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
 
@@ -29,10 +31,57 @@ export function ActionPanel() {
 
   const logoutCurrentSession = () => void handleLogout('/auth/logout');
   const logoutAllSessions = () => void handleLogout('/auth/logout-all');
+  const openUploadFilePicker = () => uploadInputRef.current?.click();
+
+  const handleUploadChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    // get the file from the event
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) {
+      toast.error('No file selected.');
+      return;
+    }
+
+    try {
+      // request the upload single url
+      const { url, id, headers } = await requestUploadSingle({
+        filename: file.name,
+        contentType: file.type || 'application/octet-stream',
+        sizeBytes: file.size,
+      });
+
+      // upload the file to the presigned url
+      let etag = '';
+      try {
+        etag = await uploadFileToPresignedUrl(url, headers, file);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'ETAG_MISSING') {
+          toast.error('Upload succeeded but ETag is missing.');
+          return;
+        }
+
+        toast.error('Failed to upload file.');
+        return;
+      }
+
+      // confirm the upload
+      await confirmUpload(id, etag);
+      toast.success('File uploaded successfully.');
+    } catch {
+      toast.error('Failed to upload file.');
+    }
+  };
 
   return (
     <div className="action-panel-container">
-      <button className="action-panel-button action-panel-button--upload" type="button" aria-label="Upload file">
+      <input ref={uploadInputRef} type="file" onChange={handleUploadChange} hidden />
+      <button
+        className="action-panel-button action-panel-button--upload"
+        type="button"
+        aria-label="Upload file"
+        onClick={openUploadFilePicker}
+      >
         <Upload
           className="action-panel-button-icon action-panel-button-icon--upload"
           size={20}
