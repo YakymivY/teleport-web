@@ -1,0 +1,54 @@
+/* Transferred files list (source device) */
+.workspace-upload-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.workspace-upload-state {
+  font-size: 14px;
+  opacity: 0.9;
+  color: gray;
+}
+
+.workspace-upload-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+.workspace-upload-file {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: gray;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 96px;
+}
+
+.workspace-upload-file-preview {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a16fec;
+}
+
+.workspace-upload-file-name {
+  text-align: center;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-clamp: 2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
