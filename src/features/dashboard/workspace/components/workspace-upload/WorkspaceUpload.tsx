@@ -5,10 +5,16 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { FileTransferResponse } from './types/FileTransferResponse.ts';
 import { fetchSourceFileTransfers } from './api/workspace-upload.api';
+import { useUploadStore } from '../../../../../store/upload/useUploadStore';
+import { mapUploadFileToTransfer } from './utils/mapUploadFileToTransfer';
 
 export function WorkspaceUpload() {
   const [transfers, setTransfers] = useState<FileTransferResponse[]>([]);
   const [loading, setLoading] = useState(false);
+  const currentFile = useUploadStore((state) => state.currentFile);
+
+  const optimisticTransfer = currentFile ? mapUploadFileToTransfer(currentFile) : null;
+  const visibleTransfers = optimisticTransfer ? [optimisticTransfer, ...transfers] : transfers;
 
   useEffect(() => {
     let cancelled = false;
@@ -39,7 +45,7 @@ export function WorkspaceUpload() {
         {loading ? <i className="workspace-upload-state">Loading…</i> : null}
 
         <div className="workspace-upload-list">
-          {transfers.map((transfer) => (
+          {visibleTransfers.map((transfer) => (
             <div
               key={transfer.id}
               className="workspace-upload-file"

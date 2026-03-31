@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../ui/Modal';
 import { confirmUpload, logout, requestUploadSingle, uploadFileToPresignedUrl } from './api/action-panel.api';
+import { useUploadStore } from '../../../store/upload/useUploadStore';
 import './ActionPanel.css';
 
 export function ActionPanel() {
@@ -11,6 +12,7 @@ export function ActionPanel() {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const logoutButtonRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
+  const setCurrentFile = useUploadStore((state) => state.setCurrentFile);
 
   const cleanupAndRedirect = () => {
     localStorage.removeItem('token');
@@ -42,6 +44,14 @@ export function ActionPanel() {
       toast.error('No file selected.');
       return;
     }
+
+    // persist the file in the store
+    setCurrentFile({
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size,
+      lastModified: file.lastModified,
+    });
 
     try {
       // request the upload single url
