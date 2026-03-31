@@ -27,22 +27,10 @@
   border-color: #a16fec;
 }
 
-.action-panel-button--upload {
-  background-color: rgba(224, 207, 250, 0.2);
-}
-
-.action-panel-button--upload:hover {
-  background-color: #e0cffa;
-}
-
 .action-panel-button-icon {
   display: block;
   color: #a16fec;
   transition: color 0.2s ease;
-}
-
-.action-panel-button-icon--upload {
-  color: #8b5bd3;
 }
 
 .action-panel-button:hover .action-panel-button-icon {

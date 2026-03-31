@@ -77,13 +77,13 @@ export function ActionPanel() {
     <div className="action-panel-container">
       <input ref={uploadInputRef} type="file" onChange={handleUploadChange} hidden />
       <button
-        className="action-panel-button action-panel-button--upload"
+        className="action-panel-button"
         type="button"
         aria-label="Upload file"
         onClick={openUploadFilePicker}
       >
         <Upload
-          className="action-panel-button-icon action-panel-button-icon--upload"
+          className="action-panel-button-icon"
           size={20}
           strokeWidth={2.3}
           absoluteStrokeWidth
