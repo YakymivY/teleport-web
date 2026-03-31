@@ -1,12 +1,12 @@
-import './WorkspaceUpload.css';
-
 import { File } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { Tooltip } from '../../../../../ui/Tooltip';
 import type { FileTransferResponse } from './types/FileTransferResponse.ts';
 import { fetchSourceFileTransfers } from './api/workspace-upload.api';
 import { useUploadStore } from '../../../../../store/upload/useUploadStore';
 import { mapUploadFileToTransfer } from './utils/mapUploadFileToTransfer';
+import './WorkspaceUpload.css';
 
 export function WorkspaceUpload() {
   const [transfers, setTransfers] = useState<FileTransferResponse[]>([]);
@@ -55,7 +55,9 @@ export function WorkspaceUpload() {
               <div className="workspace-upload-file-preview" aria-hidden="true">
                 <File size={28} />
               </div>
-              <div className="workspace-upload-file-name">{transfer.filename}</div>
+              <Tooltip content={transfer.filename} side="bottom" delayDuration={1000}>
+                <div className="workspace-upload-file-name">{transfer.filename}</div>
+              </Tooltip>
             </div>
           ))}
         </div>

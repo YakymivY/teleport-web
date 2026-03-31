@@ -90,6 +90,7 @@ export function ActionPanel() {
       setCurrentFileStatus(TransferStatus.AVAILABLE);
       toast.success('File uploaded successfully.');
     } catch {
+      setCurrentFileStatus(TransferStatus.ABORTED);
       toast.error('Failed to upload file.');
     }
   };

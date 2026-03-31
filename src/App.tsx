@@ -5,24 +5,27 @@ import { Dashboard } from './features/dashboard/Dashboard';
 import { AppToaster } from './ui/toast';
 import { PublicRoute } from './PublicRoute';
 import { PrivateRoute } from './PrivateRoute';
+import { TooltipProvider } from './ui/Tooltip';
 import './App.css'
 
 function App() {
   return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<PrivateRoute />}>
-            <Route path='/' element={<Dashboard />} />
-          </Route>
-          <Route element={<PublicRoute />}>
-            <Route path='/login' element={<Login />} />
-            <Route path='/waiting' element={<WaitingScreen />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-      <AppToaster />
-    </>
+    <TooltipProvider>
+      <>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<PrivateRoute />}>
+              <Route path='/' element={<Dashboard />} />
+            </Route>
+            <Route element={<PublicRoute />}>
+              <Route path='/login' element={<Login />} />
+              <Route path='/waiting' element={<WaitingScreen />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+        <AppToaster />
+      </>
+    </TooltipProvider>
   );
 }
 
