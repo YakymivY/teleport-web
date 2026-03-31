@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../ui/Modal';
 import { confirmUpload, logout, requestUploadSingle, uploadFileToPresignedUrl } from './api/action-panel.api';
 import { useUploadStore } from '../../../store/upload/useUploadStore';
+import { TransferStatus } from '../models/transfer-status.enum.ts';
 import './ActionPanel.css';
 
 export function ActionPanel() {
@@ -13,6 +14,7 @@ export function ActionPanel() {
   const logoutButtonRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
   const setCurrentFile = useUploadStore((state) => state.setCurrentFile);
+  const setCurrentFileStatus = useUploadStore((state) => state.setCurrentFileStatus);
 
   const cleanupAndRedirect = () => {
     localStorage.removeItem('token');
@@ -45,21 +47,27 @@ export function ActionPanel() {
       return;
     }
 
+    const contentType = file.type || 'application/octet-stream';
+
     // persist the file in the store
     setCurrentFile({
       name: file.name,
-      type: file.type || 'application/octet-stream',
+      type: contentType,
       size: file.size,
       lastModified: file.lastModified,
+      status: TransferStatus.INITIALIZED,
     });
 
     try {
       // request the upload single url
       const { url, id, headers } = await requestUploadSingle({
         filename: file.name,
-        contentType: file.type || 'application/octet-stream',
+        contentType,
         sizeBytes: file.size,
       });
+
+      // update the file status to pending
+      setCurrentFileStatus(TransferStatus.PENDING);
 
       // upload the file to the presigned url
       let etag = '';
@@ -77,6 +85,9 @@ export function ActionPanel() {
 
       // confirm the upload
       await confirmUpload(id, etag);
+
+      // update the file status to available
+      setCurrentFileStatus(TransferStatus.AVAILABLE);
       toast.success('File uploaded successfully.');
     } catch {
       toast.error('Failed to upload file.');

@@ -1,5 +1,5 @@
-import type { FileTransferResponse } from '../features/dashboard/workspace/components/workspace-upload/types/FileTransferResponse';
-import type { UploadFileMetadata } from '../store/upload/types/UploadFileMetadata';
+import type { FileTransferResponse } from '../types/FileTransferResponse.ts';
+import type { UploadFileMetadata } from '../../../../../../store/upload/types/UploadFileMetadata.ts';
 
 export function mapUploadFileToTransfer(file: UploadFileMetadata): FileTransferResponse {
   const nowIso = new Date().toISOString();
@@ -10,7 +10,7 @@ export function mapUploadFileToTransfer(file: UploadFileMetadata): FileTransferR
     filename: file.name,
     mimeType: file.type,
     sizeBytes: file.size,
-    status: 'pending',
+    status: file.status,
     createdAt: nowIso,
     updatedAt: nowIso,
   };

@@ -13,6 +13,7 @@ export function WorkspaceUpload() {
   const [loading, setLoading] = useState(false);
   const currentFile = useUploadStore((state) => state.currentFile);
 
+  // adding persisted file to the list of transfers
   const optimisticTransfer = currentFile ? mapUploadFileToTransfer(currentFile) : null;
   const visibleTransfers = optimisticTransfer ? [optimisticTransfer, ...transfers] : transfers;
 
@@ -23,6 +24,7 @@ export function WorkspaceUpload() {
       setLoading(true);
 
       try {
+        // fetch the transfers from the server
         const data = await fetchSourceFileTransfers();
         if (!cancelled) setTransfers(data);
       } catch {
