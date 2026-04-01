@@ -4,9 +4,10 @@ import toast from 'react-hot-toast';
 import { Tooltip } from '../../../../../ui/Tooltip';
 import { TransferStatus } from '../../../models/transfer-status.enum.ts';
 import type { FileTransferResponse } from './types/FileTransferResponse.ts';
-import { fetchSourceFileTransfers } from './api/workspace-upload.api';
+import { deleteFileTransfer, fetchSourceFileTransfers } from './api/workspace-upload.api';
 import { useUploadStore } from '../../../../../store/upload/useUploadStore';
 import { mapUploadFileToTransfer } from './utils/mapUploadFileToTransfer';
+import type { DeleteFileRequest } from './types/DeleteFileRequest';
 import './WorkspaceUpload.css';
 
 function getStatusClass(status: TransferStatus): string {
@@ -26,11 +27,25 @@ function getStatusClass(status: TransferStatus): string {
 export function WorkspaceUpload() {
   const [transfers, setTransfers] = useState<FileTransferResponse[]>([]);
   const [loading, setLoading] = useState(false);
+  const [deletingTransferId, setDeletingTransferId] = useState<string | null>(null);
   const currentFile = useUploadStore((state) => state.currentFile);
 
   // adding persisted file to the list of transfers
   const optimisticTransfer = currentFile ? mapUploadFileToTransfer(currentFile) : null;
   const visibleTransfers = optimisticTransfer ? [optimisticTransfer, ...transfers] : transfers;
+
+  const handleDeleteTransfer = async (fileTransferId: string) => {
+    const params: DeleteFileRequest = { fileTransferId };
+    setDeletingTransferId(fileTransferId);
+    try {
+      await deleteFileTransfer(params);
+      setTransfers((prev) => prev.filter((t) => t.id !== fileTransferId));
+    } catch {
+      toast.error('Failed to delete file transfer.');
+    } finally {
+      setDeletingTransferId((prev) => (prev === fileTransferId ? null : prev));
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -64,19 +79,28 @@ export function WorkspaceUpload() {
         <div className="workspace-upload-list">
           {visibleTransfers.map((transfer) => {
             const statusClass = getStatusClass(transfer.status);
+            const canDelete = !transfer.id.startsWith('local-');
+            const isDeleting = deletingTransferId === transfer.id;
 
             return (
               <div
                 key={transfer.id}
-                className="workspace-upload-file"
+                className={`workspace-upload-file ${isDeleting ? 'workspace-upload-file--deleting' : ''}`}
               >
-                <button
-                  className="workspace-upload-file-cancel"
-                  type="button"
-                  aria-label="Cancel upload"
-                >
-                  <X size={14} strokeWidth={3} />
-                </button>
+                {isDeleting ? (
+                  <div className="workspace-upload-file-deleting-overlay" aria-hidden="true" />
+                ) : null}
+                {canDelete ? (
+                  <button
+                    className="workspace-upload-file-cancel"
+                    type="button"
+                    aria-label="Delete file transfer"
+                    onClick={() => handleDeleteTransfer(transfer.id)}
+                    disabled={isDeleting}
+                  >
+                    <X size={14} strokeWidth={3} />
+                  </button>
+                ) : null}
                 <div className="workspace-upload-file-preview" aria-hidden="true">
                   <File size={50} />
                 </div>
