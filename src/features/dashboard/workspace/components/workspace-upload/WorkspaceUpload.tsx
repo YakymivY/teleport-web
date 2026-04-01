@@ -2,11 +2,26 @@ import { File } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Tooltip } from '../../../../../ui/Tooltip';
+import { TransferStatus } from '../../../models/transfer-status.enum.ts';
 import type { FileTransferResponse } from './types/FileTransferResponse.ts';
 import { fetchSourceFileTransfers } from './api/workspace-upload.api';
 import { useUploadStore } from '../../../../../store/upload/useUploadStore';
 import { mapUploadFileToTransfer } from './utils/mapUploadFileToTransfer';
 import './WorkspaceUpload.css';
+
+function getStatusClass(status: TransferStatus): string {
+  switch (status) {
+    case TransferStatus.AVAILABLE:
+      return 'workspace-upload-file-status-fill--available';
+    case TransferStatus.ABORTED:
+      return 'workspace-upload-file-status-fill--aborted';
+    case TransferStatus.PENDING:
+      return 'workspace-upload-file-status-fill--pending';
+    case TransferStatus.INITIALIZED:
+    default:
+      return 'workspace-upload-file-status-fill--initialized';
+  }
+}
 
 export function WorkspaceUpload() {
   const [transfers, setTransfers] = useState<FileTransferResponse[]>([]);
@@ -47,19 +62,26 @@ export function WorkspaceUpload() {
         {loading ? <i className="workspace-upload-state">Loading…</i> : null}
 
         <div className="workspace-upload-list">
-          {visibleTransfers.map((transfer) => (
-            <div
-              key={transfer.id}
-              className="workspace-upload-file"
-            >
-              <div className="workspace-upload-file-preview" aria-hidden="true">
-                <File size={28} />
+          {visibleTransfers.map((transfer) => {
+            const statusClass = getStatusClass(transfer.status);
+
+            return (
+              <div
+                key={transfer.id}
+                className="workspace-upload-file"
+              >
+                <div className="workspace-upload-file-preview" aria-hidden="true">
+                  <File size={50} />
+                </div>
+                <div className="workspace-upload-file-status" aria-hidden="true">
+                  <div className={`workspace-upload-file-status-fill ${statusClass}`} />
+                </div>
+                <Tooltip content={transfer.filename} side="bottom" delayDuration={1000}>
+                  <div className="workspace-upload-file-name">{transfer.filename}</div>
+                </Tooltip>
               </div>
-              <Tooltip content={transfer.filename} side="bottom" delayDuration={1000}>
-                <div className="workspace-upload-file-name">{transfer.filename}</div>
-              </Tooltip>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
