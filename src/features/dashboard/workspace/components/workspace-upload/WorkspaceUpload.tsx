@@ -1,4 +1,4 @@
-import { File } from 'lucide-react';
+import { File, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Tooltip } from '../../../../../ui/Tooltip';
@@ -70,6 +70,13 @@ export function WorkspaceUpload() {
                 key={transfer.id}
                 className="workspace-upload-file"
               >
+                <button
+                  className="workspace-upload-file-cancel"
+                  type="button"
+                  aria-label="Cancel upload"
+                >
+                  <X size={14} strokeWidth={3} />
+                </button>
                 <div className="workspace-upload-file-preview" aria-hidden="true">
                   <File size={50} />
                 </div>
