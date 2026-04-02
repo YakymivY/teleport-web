@@ -3,10 +3,22 @@ import { LogOut, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../../ui/Modal';
-import { confirmUpload, logout, requestUploadSingle, uploadFileToPresignedUrl } from './api/action-panel.api';
+import { calculateTotalParts } from '../../../utils/fileUtils';
+import {
+  completeMultipartUpload,
+  confirmUpload,
+  getMultipartPartUrl,
+  initMultipartUpload,
+  logout,
+  requestUploadSingle,
+  uploadChunkToPresignedUrl,
+  uploadFileToPresignedUrl,
+} from './api/action-panel.api';
 import { useUploadStore } from '../../../store/upload/useUploadStore';
 import { TransferStatus } from '../models/transfer-status.enum.ts';
+import type { UploadedPart } from './types/UploadedPart.ts';
 import './ActionPanel.css';
+import { MULTIPART_THRESHOLD_BYTES, PART_SIZE_BYTES } from './configs/file-size.config.ts';
 
 export function ActionPanel() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,33 +70,84 @@ export function ActionPanel() {
       status: TransferStatus.INITIALIZED,
     });
 
-    try {
-      // request the upload single url
-      const { url, id, headers } = await requestUploadSingle({
-        filename: file.name,
-        contentType,
-        sizeBytes: file.size,
-      });
-
-      // update the file status to pending
-      setCurrentFileStatus(TransferStatus.PENDING);
-
-      // upload the file to the presigned url
-      let etag = '';
-      try {
-        etag = await uploadFileToPresignedUrl(url, headers, file);
-      } catch (error) {
-        if (error instanceof Error && error.message === 'ETAG_MISSING') {
-          toast.error('Upload succeeded but ETag is missing.');
-          return;
-        }
-
-        toast.error('Failed to upload file.');
+    const handlePresignUploadError = (error: unknown) => {
+      if (error instanceof Error && error.message === 'ETAG_MISSING') {
+        toast.error('Upload succeeded but ETag is missing.');
         return;
       }
 
-      // confirm the upload
-      await confirmUpload(id, etag);
+      toast.error('Failed to upload file.');
+    };
+
+    try {
+      if (file.size > MULTIPART_THRESHOLD_BYTES) {
+        // request multipart upload init
+        const totalParts = calculateTotalParts(file.size, PART_SIZE_BYTES);
+        const { s3UploadId, id: fileTransferId } = await initMultipartUpload({
+          filename: file.name,
+          contentType,
+          sizeBytes: file.size,
+          totalParts,
+        });
+
+        // update the file status to pending
+        setCurrentFileStatus(TransferStatus.PENDING);
+
+        const uploadedParts: UploadedPart[] = [];
+        for (let partNumber = 1; partNumber <= totalParts; partNumber += 1) {
+          const start = (partNumber - 1) * PART_SIZE_BYTES;
+          const end = Math.min(start + PART_SIZE_BYTES, file.size);
+          const chunk = file.slice(start, end);
+
+          const { method, url } = await getMultipartPartUrl({
+            fileTransferId,
+            s3UploadId,
+            partNumber,
+          });
+
+          // upload the part to the presigned url
+          let etag = '';
+          try {
+            etag = await uploadChunkToPresignedUrl(url, method ?? 'PUT', undefined, chunk);
+          } catch (error) {
+            handlePresignUploadError(error);
+            setCurrentFileStatus(TransferStatus.ABORTED);
+            return;
+          }
+
+          uploadedParts.push({ partNumber, etag });
+        }
+
+        // confirm the multipart upload
+        await completeMultipartUpload({
+          fileTransferId,
+          s3UploadId,
+          parts: uploadedParts,
+        });
+      } else {
+        // request the upload single url
+        const { url, id, headers } = await requestUploadSingle({
+          filename: file.name,
+          contentType,
+          sizeBytes: file.size,
+        });
+
+        // update the file status to pending
+        setCurrentFileStatus(TransferStatus.PENDING);
+
+        // upload the file to the presigned url
+        let etag = '';
+        try {
+          etag = await uploadFileToPresignedUrl(url, headers, file);
+        } catch (error) {
+          handlePresignUploadError(error);
+          setCurrentFileStatus(TransferStatus.ABORTED);
+          return;
+        }
+
+        // confirm the upload
+        await confirmUpload(id, etag);
+      }
 
       // update the file status to available
       setCurrentFileStatus(TransferStatus.AVAILABLE);

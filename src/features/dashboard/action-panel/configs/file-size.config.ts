@@ -1,0 +1,2 @@
+export const MULTIPART_THRESHOLD_BYTES = 10 * 1024 * 1024; // 10 MB
+export const PART_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
