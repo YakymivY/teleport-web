@@ -1,0 +1,37 @@
+.action-panel-button-letter {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #a16fec;
+  transition: color 0.2s ease;
+}
+
+.action-panel-modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.action-panel-modal-button {
+  width: 100%;
+  height: auto;
+  padding: 0.4rem 0.75rem;
+  justify-content: center;
+}
+
+.action-panel-modal-button--primary {
+  background-color: #a16fec;
+  border-color: #a16fec;
+}
+
+.action-panel-modal-button--primary:hover {
+  background-color: #e0cffa;
+  border-color: #e0cffa;
+}
+
+.action-panel-modal-button--primary .action-panel-button-letter {
+  color: #ffffff;
+}
+
+.action-panel-modal-button--secondary {
+  background-color: transparent;
+}

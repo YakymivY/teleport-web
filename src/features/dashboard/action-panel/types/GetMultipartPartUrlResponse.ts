@@ -1,4 +1,6 @@
 export interface GetMultipartPartUrlResponse {
-  method?: string;
   url: string;
+  method: string;
+  headers: Record<string, string>;
+  id: string;
 }
