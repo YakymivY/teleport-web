@@ -1,10 +1,10 @@
 import { create } from 'zustand';
-import type { UploadFileMetadata } from './types/UploadFileMetadata';
+import type { FileTransferResponse } from '../../features/dashboard/models/FileTransferResponse.ts';
 import type { TransferStatus } from '../../features/dashboard/models/transfer-status.enum.ts';
 
 interface UploadStoreState {
-  currentFile: UploadFileMetadata | null;
-  setCurrentFile: (file: UploadFileMetadata) => void;
+  currentFile: FileTransferResponse | null;
+  setCurrentFile: (file: FileTransferResponse) => void;
   setCurrentFileStatus: (status: TransferStatus) => void;
   clearCurrentFile: () => void;
 }

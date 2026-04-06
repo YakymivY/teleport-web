@@ -1,4 +1,4 @@
-import type { TransferStatus } from '../../../../models/transfer-status.enum.ts';
+import type { TransferStatus } from './transfer-status.enum.ts';
 
 export interface FileTransferResponse {
   id: string;

@@ -3,10 +3,9 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Tooltip } from '../../../../../ui/Tooltip';
 import { TransferStatus } from '../../../models/transfer-status.enum.ts';
-import type { FileTransferResponse } from './types/FileTransferResponse.ts';
+import type { FileTransferResponse } from '../../../models/FileTransferResponse.ts';
 import { deleteFileTransfer, fetchSourceFileTransfers } from './api/workspace-upload.api';
 import { useUploadStore } from '../../../../../store/upload/useUploadStore';
-import { mapUploadFileToTransfer } from './utils/mapUploadFileToTransfer';
 import type { DeleteFileRequest } from './types/DeleteFileRequest';
 import './WorkspaceUpload.css';
 
@@ -29,10 +28,12 @@ export function WorkspaceUpload() {
   const [loading, setLoading] = useState(false);
   const [deletingTransferId, setDeletingTransferId] = useState<string | null>(null);
   const currentFile = useUploadStore((state) => state.currentFile);
+  const clearCurrentFile = useUploadStore((state) => state.clearCurrentFile);
 
   // adding persisted file to the list of transfers
-  const optimisticTransfer = currentFile ? mapUploadFileToTransfer(currentFile) : null;
-  const visibleTransfers = optimisticTransfer ? [optimisticTransfer, ...transfers] : transfers;
+  const visibleTransfers = currentFile
+    ? [currentFile, ...transfers.filter((t) => t.id !== currentFile.id)]
+    : transfers;
 
   const handleDeleteTransfer = async (fileTransferId: string) => {
     const params: DeleteFileRequest = { fileTransferId };
@@ -47,6 +48,7 @@ export function WorkspaceUpload() {
     }
   };
 
+  // loading the transfers from the server
   useEffect(() => {
     let cancelled = false;
 
@@ -70,6 +72,22 @@ export function WorkspaceUpload() {
       cancelled = true;
     };
   }, []);
+
+  // adding the current file to the list of transfers
+  useEffect(() => {
+    if (!currentFile || currentFile.status !== TransferStatus.AVAILABLE) {
+      return;
+    }
+
+    setTransfers((prev) => {
+      if (prev.some((t) => t.id === currentFile.id)) {
+        return prev;
+      }
+      return [currentFile, ...prev];
+    });
+
+    clearCurrentFile();
+  }, [currentFile, clearCurrentFile]);
 
   return (
     <section className="workspace-section workspace-section--upload">

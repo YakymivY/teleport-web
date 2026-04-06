@@ -1,5 +1,5 @@
 import { apiClient } from '../../../../../../api/apiClient';
-import type { FileTransferResponse } from '../types/FileTransferResponse';
+import type { FileTransferResponse } from '../../../../models/FileTransferResponse.ts';
 import type { DeleteFileRequest } from '../types/DeleteFileRequest.ts';
 
 export async function fetchSourceFileTransfers(): Promise<FileTransferResponse[]> {

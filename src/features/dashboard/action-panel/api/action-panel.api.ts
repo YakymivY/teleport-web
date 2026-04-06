@@ -6,6 +6,7 @@ import type { InitMultipartUploadParams } from '../types/InitMultipartUploadPara
 import type { InitMultipartUploadResponse } from '../types/InitMultipartUploadResponse.ts';
 import type { UploadSingleParams } from '../types/UploadSingleParams.ts';
 import type { UploadSingleResponse } from '../types/UploadSingleResponse.ts';
+import type { FileTransferResponse } from '../../models/FileTransferResponse.ts';
 
 export async function logout(endpoint: '/auth/logout' | '/auth/logout-all') {
   const response = await apiClient.post(endpoint, {});
@@ -33,12 +34,12 @@ export async function getMultipartPartUrl(body: GetMultipartPartUrlParams) {
 }
 
 export async function completeMultipartUpload(body: CompleteMultipartUploadParams) {
-  const response = await apiClient.post('/files/upload/multipart/complete', body);
+  const response = await apiClient.post<FileTransferResponse>('/files/upload/multipart/complete', body);
   return response.data;
 }
 
 export async function confirmUpload(id: string, etag: string) {
-  const response = await apiClient.post('/files/upload/confirm', { id, etag });
+  const response = await apiClient.post<FileTransferResponse>('/files/upload/confirm', { id, etag });
   return response.data;
 }
 

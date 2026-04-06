@@ -6,6 +6,7 @@ import { MULTIPART_THRESHOLD_BYTES, PART_SIZE_BYTES } from "../../configs/file-s
 import { calculateTotalParts } from "../../../../../utils/fileUtils";
 import { initMultipartUpload, getMultipartPartUrl, uploadChunkToPresignedUrl, completeMultipartUpload, requestUploadSingle, uploadFileToPresignedUrl, confirmUpload } from "../../api/action-panel.api";
 import type { UploadedPart } from "../../types/UploadedPart";
+import type { FileTransferResponse } from "../../../models/FileTransferResponse.ts";
 import { Upload } from "lucide-react";
 import './UploadButton.css';
 
@@ -28,15 +29,21 @@ export function UploadButton() {
     }
 
     const contentType = file.type || 'application/octet-stream';
+    const nowIso = new Date().toISOString();
 
-    // persist the file in the store
-    setCurrentFile({
-      name: file.name,
-      type: contentType,
-      size: file.size,
-      lastModified: file.lastModified,
+    // temporary file transfer object
+    const provisional: FileTransferResponse = {
+      id: `local-${file.name}-${file.lastModified}`,
+      sourceDeviceId: '',
+      filename: file.name,
+      mimeType: contentType,
+      sizeBytes: file.size,
       status: TransferStatus.INITIALIZED,
-    });
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    };
+
+    setCurrentFile(provisional);
 
     const handlePresignUploadError = (error: unknown) => {
       if (error instanceof Error && error.message === 'ETAG_MISSING') {
@@ -85,12 +92,12 @@ export function UploadButton() {
           uploadedParts.push({ partNumber, etag });
         }
 
-        // confirm the multipart upload
-        await completeMultipartUpload({
+        const completedTransfer = await completeMultipartUpload({
           fileTransferId,
           s3UploadId,
           parts: uploadedParts,
         });
+        setCurrentFile(completedTransfer);
       } else {
         // request the upload single url
         const { url, id, headers } = await requestUploadSingle({
@@ -111,12 +118,10 @@ export function UploadButton() {
           throw error;
         }
 
-        // confirm the upload
-        await confirmUpload(id, etag);
+        const completedTransfer = await confirmUpload(id, etag);
+        setCurrentFile(completedTransfer);
       }
 
-      // update the file status to available
-      setCurrentFileStatus(TransferStatus.AVAILABLE);
       toast.success('File uploaded successfully.');
     } catch (error) {
       setCurrentFileStatus(TransferStatus.ABORTED);
