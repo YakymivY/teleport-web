@@ -1,6 +1,7 @@
-import { Pen, Trash } from 'lucide-react';
+import { ArrowRight, Pen, Trash } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useSelectedDeviceStore } from '../../../store/device/useSelectedDeviceStore';
 import type { Device } from './types/types';
 import { AddButton } from './components/add-button/AddButton';
 import { deleteDevice, fetchDevices, renameDevice } from './api/device-panel.api';
@@ -15,6 +16,9 @@ export function DevicePanel() {
   const [renameLoading, setRenameLoading] = useState(false);
   const [deleteLoadingDeviceId, setDeleteLoadingDeviceId] = useState<string | null>(null);
 
+  const selectedDeviceId = useSelectedDeviceStore((state) => state.selectedDeviceId);
+  const setSelectedDeviceId = useSelectedDeviceStore((state) => state.setSelectedDeviceId);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -26,6 +30,10 @@ export function DevicePanel() {
         const devices = await fetchDevices();
         if (cancelled) return;
         setDevices(devices);
+        const currentSelectedDeviceId = useSelectedDeviceStore.getState().selectedDeviceId;
+        if (!currentSelectedDeviceId && devices[0]) {
+          useSelectedDeviceStore.getState().setSelectedDeviceId(devices[0].id);
+        }
       } catch {
         if (cancelled) return;
         setError('Failed to load devices.');
@@ -80,7 +88,13 @@ export function DevicePanel() {
 
     try {
       await deleteDevice({ id: deviceId });
-      setDevices((prev) => prev.filter((device) => device.id !== deviceId));
+      setDevices((prev) => {
+        const nextDevices = prev.filter((device) => device.id !== deviceId);
+        if (selectedDeviceId === deviceId) {
+          setSelectedDeviceId(nextDevices[0]?.id ?? null);
+        }
+        return nextDevices;
+      });
 
       if (editingDeviceId === deviceId) {
         setEditingDeviceId(null);
@@ -102,9 +116,19 @@ export function DevicePanel() {
       <div className="device-panel-list">
         {devices.map((device) => {
           const isEditing = editingDeviceId === device.id;
+          const isActive = selectedDeviceId === device.id;
 
           return (
-            <div key={device.id} className="device-panel-device">
+            <div
+              key={device.id}
+              className={`device-panel-device${isActive ? ' device-panel-device--active' : ''}`}
+              onClick={() => setSelectedDeviceId(device.id)}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="device-panel-device-indicator" aria-hidden="true">
+                {isActive ? <ArrowRight size={18} /> : null}
+              </div>
               {isEditing ? (
                 <>
                   <input
@@ -112,6 +136,7 @@ export function DevicePanel() {
                     type="text"
                     value={editingName}
                     onChange={(e) => setEditingName(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Escape') setEditingDeviceId(null);
@@ -120,7 +145,8 @@ export function DevicePanel() {
                   <button
                     className="device-panel-rename-action-button"
                     type="button"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       void handleRename();
                     }}
                     disabled={renameLoading}
@@ -136,7 +162,10 @@ export function DevicePanel() {
                       className="device-panel-rename-button"
                       type="button"
                       aria-label={`Rename ${device.name}`}
-                      onClick={() => startEditing(device)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEditing(device);
+                      }}
                     >
                       <Pen size={18} />
                     </button>
@@ -146,7 +175,8 @@ export function DevicePanel() {
                       aria-label={`Delete ${device.name}`}
                       aria-busy={deleteLoadingDeviceId === device.id}
                       disabled={deleteLoadingDeviceId === device.id}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         void handleDelete(device.id);
                       }}
                     >

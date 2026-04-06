@@ -7,6 +7,16 @@ import type { InitMultipartUploadResponse } from '../types/InitMultipartUploadRe
 import type { UploadSingleParams } from '../types/UploadSingleParams.ts';
 import type { UploadSingleResponse } from '../types/UploadSingleResponse.ts';
 import type { FileTransferResponse } from '../../models/FileTransferResponse.ts';
+import { useSelectedDeviceStore } from '../../../../store/device/useSelectedDeviceStore.ts';
+
+// this function is used to add the destination device id to the request
+function addDestinationDeviceId() {
+  const destinationDeviceId = useSelectedDeviceStore.getState().selectedDeviceId;
+  if (!destinationDeviceId) {
+    throw new Error('No destination device selected.');
+  }
+  return destinationDeviceId;
+}
 
 export async function logout(endpoint: '/auth/logout' | '/auth/logout-all') {
   const response = await apiClient.post(endpoint, {});
@@ -14,13 +24,17 @@ export async function logout(endpoint: '/auth/logout' | '/auth/logout-all') {
 }
 
 export async function requestUploadSingle(params: UploadSingleParams) {
-  const response = await apiClient.get<UploadSingleResponse>('/files/upload/single', { params });
+  const destinationDeviceId = addDestinationDeviceId();
+  const response = await apiClient.get<UploadSingleResponse>('/files/upload/single', {
+    params: { ...params, destinationDeviceId },
+  });
   return response.data;
 }
 
 export async function initMultipartUpload(params: InitMultipartUploadParams) {
+  const destinationDeviceId = addDestinationDeviceId();
   const response = await apiClient.get<InitMultipartUploadResponse>('/files/upload/multipart', {
-    params,
+    params: { ...params, destinationDeviceId },
   });
   return response.data;
 }

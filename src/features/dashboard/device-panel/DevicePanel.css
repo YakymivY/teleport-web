@@ -39,6 +39,26 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  cursor: pointer;
+}
+
+.device-panel-device--active {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(161, 111, 236, 0.55);
+}
+
+.device-panel-device:focus-visible {
+  outline: 2px solid rgba(161, 111, 236, 0.75);
+  outline-offset: 2px;
+}
+
+.device-panel-device-indicator {
+  width: 18px;
+  min-width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a16fec;
 }
 
 .device-panel-device-name {
