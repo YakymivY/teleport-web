@@ -3,13 +3,15 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Tooltip } from '../../../../../ui/Tooltip';
 import type { FileTransferResponse } from '../../../models/FileTransferResponse.ts';
-import { fetchDestinationFileTransfers, fetchDownloadUrl } from './api/workspace-download.api';
+import { deleteFileTransfer, fetchDestinationFileTransfers, fetchDownloadUrl } from './api/workspace-download.api';
+import type { DeleteFileRequest } from './types/DeleteFileRequest';
 import './WorkspaceDownload.css';
 
 export function WorkspaceDownload() {
   const [transfers, setTransfers] = useState<FileTransferResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [downloadingTransferId, setDownloadingTransferId] = useState<string | null>(null);
+  const [deletingTransferId, setDeletingTransferId] = useState<string | null>(null);
 
   const handleDownload = async (transfer: FileTransferResponse) => {
     setDownloadingTransferId(transfer.id);
@@ -26,6 +28,19 @@ export function WorkspaceDownload() {
       toast.error('Failed to start download.');
     } finally {
       setDownloadingTransferId((prev) => (prev === transfer.id ? null : prev));
+    }
+  };
+
+  const handleDeleteTransfer = async (fileTransferId: string) => {
+    const params: DeleteFileRequest = { fileTransferId };
+    setDeletingTransferId(fileTransferId);
+    try {
+      await deleteFileTransfer(params);
+      setTransfers((prev) => prev.filter((t) => t.id !== fileTransferId));
+    } catch {
+      toast.error('Failed to delete file transfer.');
+    } finally {
+      setDeletingTransferId((prev) => (prev === fileTransferId ? null : prev));
     }
   };
 
@@ -70,11 +85,17 @@ export function WorkspaceDownload() {
                   type="button"
                   aria-label="Download file"
                   onClick={() => void handleDownload(transfer)}
-                  disabled={downloadingTransferId === transfer.id}
+                  disabled={downloadingTransferId === transfer.id || deletingTransferId === transfer.id}
                 >
                   <Download size={14} strokeWidth={2.5} />
                 </button>
-                <button className="workspace-download-file-action" type="button" aria-label="Delete file transfer">
+                <button
+                  className="workspace-download-file-action"
+                  type="button"
+                  aria-label="Delete file transfer"
+                  onClick={() => void handleDeleteTransfer(transfer.id)}
+                  disabled={deletingTransferId === transfer.id || downloadingTransferId === transfer.id}
+                >
                   <Trash size={14} strokeWidth={2.5} />
                 </button>
               </div>
