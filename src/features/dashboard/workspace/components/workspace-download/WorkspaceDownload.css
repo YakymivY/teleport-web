@@ -1,0 +1,53 @@
+/* Transferred files list (destination device) */
+.workspace-download-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.workspace-download-state {
+  font-size: 14px;
+  opacity: 0.9;
+  color: gray;
+}
+
+.workspace-download-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+.workspace-download-file {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: gray;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 90px;
+  cursor: default;
+}
+
+.workspace-download-file-preview {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a16fec;
+}
+
+.workspace-download-file-name {
+  text-align: center;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
