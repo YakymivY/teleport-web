@@ -47,6 +47,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  min-height: 22px;
 }
 
 .workspace-download-file-action {
@@ -71,6 +73,28 @@
 .workspace-download-file-action:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+.workspace-download-file-progress {
+  position: relative;
+  width: 60%;
+  height: 4px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: rgba(161, 111, 236, 0.18);
+  overflow: hidden;
+}
+
+.workspace-download-file-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 120ms ease-out;
+  background-color: #a16fec;
+}
+
+.workspace-download-file-progress-fill--downloaded {
+  width: 100%;
+  background-color: #2aa35a;
 }
 
 .workspace-download-file-name {

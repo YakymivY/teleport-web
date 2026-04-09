@@ -4,7 +4,7 @@ import type { ToasterProps } from 'react-hot-toast';
 export function AppToaster(props: ToasterProps) {
   return (
     <Toaster
-      position="top-center"
+      position="top-right"
       gutter={12}
       toastOptions={{
         style: {

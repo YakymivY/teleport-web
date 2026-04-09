@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Tooltip } from '../../../../../ui/Tooltip';
 import type { FileTransferResponse } from '../../../models/FileTransferResponse.ts';
-import { deleteFileTransfer, fetchDestinationFileTransfers, fetchDownloadUrl } from './api/workspace-download.api';
+import { deleteFileTransfer, downloadFileTransfer, fetchDestinationFileTransfers } from './api/workspace-download.api';
 import type { DeleteFileRequest } from './types/DeleteFileRequest';
 import './WorkspaceDownload.css';
 
@@ -11,19 +11,29 @@ export function WorkspaceDownload() {
   const [transfers, setTransfers] = useState<FileTransferResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [downloadingTransferId, setDownloadingTransferId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadedTransferIds, setDownloadedTransferIds] = useState<Set<string>>(() => new Set());
   const [deletingTransferId, setDeletingTransferId] = useState<string | null>(null);
 
   const handleDownload = async (transfer: FileTransferResponse) => {
     setDownloadingTransferId(transfer.id);
+    setDownloadProgress(0);
     try {
-      const { url } = await fetchDownloadUrl({ fileTransferId: transfer.id });
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = transfer.filename;
-      anchor.style.display = 'none';
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
+      const ok = await downloadFileTransfer({
+        fileTransferId: transfer.id,
+        fallbackFilename: transfer.filename,
+        fallbackTotalBytes: transfer.sizeBytes,
+        onProgress: setDownloadProgress,
+      });
+      if (!ok) {
+        toast.error('File is not available (maybe already downloaded).');
+        return;
+      }
+      setDownloadedTransferIds((prev) => {
+        const next = new Set(prev);
+        next.add(transfer.id);
+        return next;
+      });
     } catch {
       toast.error('Failed to start download.');
     } finally {
@@ -80,24 +90,39 @@ export function WorkspaceDownload() {
                 <File size={50} />
               </div>
               <div className="workspace-download-file-actions">
-                <button
-                  className="workspace-download-file-action"
-                  type="button"
-                  aria-label="Download file"
-                  onClick={() => void handleDownload(transfer)}
-                  disabled={downloadingTransferId === transfer.id || deletingTransferId === transfer.id}
-                >
-                  <Download size={14} strokeWidth={2.5} />
-                </button>
-                <button
-                  className="workspace-download-file-action"
-                  type="button"
-                  aria-label="Delete file transfer"
-                  onClick={() => void handleDeleteTransfer(transfer.id)}
-                  disabled={deletingTransferId === transfer.id || downloadingTransferId === transfer.id}
-                >
-                  <Trash size={14} strokeWidth={2.5} />
-                </button>
+                {downloadedTransferIds.has(transfer.id) ? (
+                  <div className="workspace-download-file-progress" aria-hidden="true">
+                    <div className="workspace-download-file-progress-fill workspace-download-file-progress-fill--downloaded" />
+                  </div>
+                ) : downloadingTransferId === transfer.id ? (
+                  <div className="workspace-download-file-progress" aria-hidden="true">
+                    <div
+                      className="workspace-download-file-progress-fill"
+                      style={{ width: `${downloadProgress}%` }}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      className="workspace-download-file-action"
+                      type="button"
+                      aria-label="Download file"
+                      onClick={() => void handleDownload(transfer)}
+                      disabled={deletingTransferId === transfer.id || downloadingTransferId === transfer.id}
+                    >
+                      <Download size={14} strokeWidth={2.5} />
+                    </button>
+                    <button
+                      className="workspace-download-file-action"
+                      type="button"
+                      aria-label="Delete file transfer"
+                      onClick={() => void handleDeleteTransfer(transfer.id)}
+                      disabled={downloadingTransferId === transfer.id || deletingTransferId === transfer.id}
+                    >
+                      <Trash size={14} strokeWidth={2.5} />
+                    </button>
+                  </>
+                )}
               </div>
               <Tooltip content={transfer.filename} side="bottom" delayDuration={1000}>
                 <div className="workspace-download-file-name">{transfer.filename}</div>
