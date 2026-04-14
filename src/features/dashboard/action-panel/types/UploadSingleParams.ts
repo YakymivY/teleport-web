@@ -1,6 +1,5 @@
+import type { UploadSingleFile } from './UploadSingleFile';
+
 export interface UploadSingleParams {
-  destinationDeviceId: string;
-  filename: string;
-  contentType: string;
-  sizeBytes: number;
+  files: UploadSingleFile[];
 }

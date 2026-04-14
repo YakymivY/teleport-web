@@ -6,6 +6,7 @@ import type { InitMultipartUploadParams } from '../types/InitMultipartUploadPara
 import type { InitMultipartUploadResponse } from '../types/InitMultipartUploadResponse.ts';
 import type { UploadSingleParams } from '../types/UploadSingleParams.ts';
 import type { UploadSingleResponse } from '../types/UploadSingleResponse.ts';
+import type { ConfirmSingleUploadParams } from '../types/ConfirmSingleUploadParams.ts';
 import type { FileTransferResponse } from '../../models/FileTransferResponse.ts';
 import { useSelectedDeviceStore } from '../../../../store/device/useSelectedDeviceStore.ts';
 
@@ -25,8 +26,9 @@ export async function logout(endpoint: '/auth/logout' | '/auth/logout-all') {
 
 export async function requestUploadSingle(params: UploadSingleParams) {
   const destinationDeviceId = addDestinationDeviceId();
-  const response = await apiClient.get<UploadSingleResponse>('/files/upload/single', {
-    params: { ...params, destinationDeviceId },
+  const response = await apiClient.post<UploadSingleResponse[]>('/files/upload/single', {
+    ...params,
+    destinationDeviceId,
   });
   return response.data;
 }
@@ -52,8 +54,8 @@ export async function completeMultipartUpload(body: CompleteMultipartUploadParam
   return response.data;
 }
 
-export async function confirmUpload(id: string, etag: string) {
-  const response = await apiClient.post<FileTransferResponse>('/files/upload/confirm', { id, etag });
+export async function confirmUpload(params: ConfirmSingleUploadParams) {
+  const response = await apiClient.post<FileTransferResponse[]>('/files/upload/confirm', params);
   return response.data;
 }
 

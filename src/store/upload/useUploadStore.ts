@@ -3,18 +3,24 @@ import type { FileTransferResponse } from '../../features/dashboard/models/FileT
 import type { TransferStatus } from '../../features/dashboard/models/transfer-status.enum.ts';
 
 interface UploadStoreState {
-  currentFile: FileTransferResponse | null;
-  setCurrentFile: (file: FileTransferResponse) => void;
-  setCurrentFileStatus: (status: TransferStatus) => void;
-  clearCurrentFile: () => void;
+  currentFiles: FileTransferResponse[];
+  upsertCurrentFile: (file: FileTransferResponse) => void;
+  updateCurrentFileStatus: (id: string, status: TransferStatus) => void;
+  removeCurrentFile: (id: string) => void;
 }
 
 export const useUploadStore = create<UploadStoreState>((set) => ({
-  currentFile: null,
-  setCurrentFile: (file) => set({ currentFile: file }),
-  setCurrentFileStatus: (status) =>
+  currentFiles: [],
+  upsertCurrentFile: (file) =>
     set((state) => ({
-      currentFile: state.currentFile ? { ...state.currentFile, status } : state.currentFile,
+      currentFiles: [file, ...state.currentFiles.filter((f) => f.id !== file.id)],
     })),
-  clearCurrentFile: () => set({ currentFile: null }),
+  updateCurrentFileStatus: (id, status) =>
+    set((state) => ({
+      currentFiles: state.currentFiles.map((f) => (f.id === id ? { ...f, status } : f)),
+    })),
+  removeCurrentFile: (id) =>
+    set((state) => ({
+      currentFiles: state.currentFiles.filter((f) => f.id !== id),
+    })),
 }));

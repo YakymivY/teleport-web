@@ -27,13 +27,14 @@ export function WorkspaceUpload() {
   const [transfers, setTransfers] = useState<FileTransferResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [deletingTransferId, setDeletingTransferId] = useState<string | null>(null);
-  const currentFile = useUploadStore((state) => state.currentFile);
-  const clearCurrentFile = useUploadStore((state) => state.clearCurrentFile);
+  const currentFiles = useUploadStore((state) => state.currentFiles);
+  const removeCurrentFile = useUploadStore((state) => state.removeCurrentFile);
 
   // adding persisted file to the list of transfers
-  const visibleTransfers = currentFile
-    ? [currentFile, ...transfers.filter((t) => t.id !== currentFile.id)]
-    : transfers;
+  const visibleTransfers =
+    currentFiles.length > 0
+      ? [...currentFiles, ...transfers.filter((t) => !currentFiles.some((c) => c.id === t.id))]
+      : transfers;
 
   const handleDeleteTransfer = async (fileTransferId: string) => {
     const params: DeleteFileRequest = { fileTransferId };
@@ -73,21 +74,26 @@ export function WorkspaceUpload() {
     };
   }, []);
 
-  // adding the current file to the list of transfers
+  // adding current files to the list of transfers
   useEffect(() => {
-    if (!currentFile || currentFile.status !== TransferStatus.AVAILABLE) {
-      return;
-    }
+    const available = currentFiles.filter((f) => f.status === TransferStatus.AVAILABLE);
+    if (available.length === 0) return;
 
+    // add available files to the list of transfers
     setTransfers((prev) => {
-      if (prev.some((t) => t.id === currentFile.id)) {
-        return prev;
+      const next = [...prev];
+      for (const file of available) {
+        if (!next.some((t) => t.id === file.id)) {
+          next.unshift(file);
+        }
       }
-      return [currentFile, ...prev];
+      return next;
     });
 
-    clearCurrentFile();
-  }, [currentFile, clearCurrentFile]);
+    for (const file of available) {
+      removeCurrentFile(file.id);
+    }
+  }, [currentFiles, removeCurrentFile]);
 
   return (
     <section className="workspace-section workspace-section--upload">

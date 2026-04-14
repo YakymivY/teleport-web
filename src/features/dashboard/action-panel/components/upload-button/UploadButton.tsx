@@ -10,40 +10,43 @@ import type { FileTransferResponse } from "../../../models/FileTransferResponse.
 import { Upload } from "lucide-react";
 import './UploadButton.css';
 
-
 export function UploadButton() {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
-  const setCurrentFile = useUploadStore((state) => state.setCurrentFile);
-  const setCurrentFileStatus = useUploadStore((state) => state.setCurrentFileStatus);
+  const upsertCurrentFile = useUploadStore((state) => state.upsertCurrentFile);
+  const updateCurrentFileStatus = useUploadStore((state) => state.updateCurrentFileStatus);
+  const removeCurrentFile = useUploadStore((state) => state.removeCurrentFile);
   
   const openUploadFilePicker = () => uploadInputRef.current?.click();
 
   const handleUploadChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    // get the file from the event
-    const file = event.target.files?.[0];
+    const files = event.target.files ? Array.from(event.target.files) : [];
     event.target.value = '';
 
-    if (!file) {
+    if (files.length === 0) {
       toast.error('No file selected.');
       return;
     }
 
-    const contentType = file.type || 'application/octet-stream';
     const nowIso = new Date().toISOString();
 
-    // temporary file transfer object
-    const provisional: FileTransferResponse = {
-      id: `local-${file.name}-${file.lastModified}`,
-      sourceDeviceId: '',
-      filename: file.name,
-      mimeType: contentType,
-      sizeBytes: file.size,
-      status: TransferStatus.INITIALIZED,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    };
+    // create temporary file transfers for each file
+    const provisionals = files.map((file) => {
+      const contentType = file.type || 'application/octet-stream';
 
-    setCurrentFile(provisional);
+      const provisional: FileTransferResponse = {
+        id: `local-${file.name}-${file.lastModified}-${file.size}`, // temporary id
+        sourceDeviceId: '',
+        filename: file.name,
+        mimeType: contentType,
+        sizeBytes: file.size,
+        status: TransferStatus.INITIALIZED,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      };
+
+      upsertCurrentFile(provisional);
+      return { file, contentType, provisional };
+    });
 
     const handlePresignUploadError = (error: unknown) => {
       if (error instanceof Error && error.message === 'ETAG_MISSING') {
@@ -55,83 +58,122 @@ export function UploadButton() {
     };
 
     try {
-      if (file.size > MULTIPART_THRESHOLD_BYTES) {
-        // request multipart upload init
-        const totalParts = calculateTotalParts(file.size, PART_SIZE_BYTES);
-        const { s3UploadId, id: fileTransferId } = await initMultipartUpload({
-          filename: file.name,
-          contentType,
-          sizeBytes: file.size,
-          totalParts,
+      // separate files into large and small
+      const large = provisionals.filter((p) => p.file.size > MULTIPART_THRESHOLD_BYTES);
+      const small = provisionals.filter((p) => p.file.size <= MULTIPART_THRESHOLD_BYTES);
+
+      // process small files first
+      if (small.length > 0) {
+        for (const p of small) updateCurrentFileStatus(p.provisional.id, TransferStatus.PENDING);
+
+        // init (presign): server allocates transfer ids for each file
+        const presigned = await requestUploadSingle({
+          files: small.map((p) => ({
+            filename: p.file.name,
+            contentType: p.contentType,
+            sizeBytes: p.file.size,
+          })),
         });
 
-        // update the file status to pending
-        setCurrentFileStatus(TransferStatus.PENDING);
-
-        const uploadedParts: UploadedPart[] = [];
-        for (let partNumber = 1; partNumber <= totalParts; partNumber += 1) {
-          const start = (partNumber - 1) * PART_SIZE_BYTES;
-          const end = Math.min(start + PART_SIZE_BYTES, file.size);
-          const chunk = file.slice(start, end);
-
-          const { method, url, headers } = await getMultipartPartUrl({
-            fileTransferId,
-            s3UploadId,
-            partNumber,
-          });
-
-          // upload the part to the presigned url
-          let etag = '';
-          try {
-            etag = await uploadChunkToPresignedUrl(url, method ?? 'PUT', headers, chunk);
-          } catch (error) {
-            handlePresignUploadError(error);
-            throw error;
-          }
-
-          uploadedParts.push({ partNumber, etag });
+        if (presigned.length !== small.length) {
+          throw new Error('UPLOAD_INIT_FAILED');
         }
 
-        const completedTransfer = await completeMultipartUpload({
-          fileTransferId,
-          s3UploadId,
-          parts: uploadedParts,
-        });
-        setCurrentFile(completedTransfer);
-      } else {
-        // request the upload single url
-        const { url, id, headers } = await requestUploadSingle({
-          filename: file.name,
-          contentType,
-          sizeBytes: file.size,
+        const batch = small.map((p, idx) => {
+          const presign = presigned[idx];
+          // replace local provisional ids with server ids.
+          removeCurrentFile(p.provisional.id);
+          upsertCurrentFile({ ...p.provisional, id: presign.id, status: TransferStatus.PENDING });
+          return { file: p.file, transferId: presign.id, url: presign.url, headers: presign.headers };
         });
 
-        // update the file status to pending
-        setCurrentFileStatus(TransferStatus.PENDING);
+        // PUT uploads: run concurrently; if any fails, the whole batch is aborted
+        const uploadTasks = batch.map((b) => async () => {
+          const etag = await uploadFileToPresignedUrl(b.url, b.headers, b.file);
+          return { id: b.transferId, etag };
+        });
 
-        // upload the file to the presigned url
-        let etag = '';
+        // upload files concurrently
+        let uploaded: Array<{ id: string; etag: string }> = [];
         try {
-          etag = await uploadFileToPresignedUrl(url, headers, file);
+          uploaded = await Promise.all(uploadTasks.map((t) => t()));
         } catch (error) {
+          for (const b of batch) updateCurrentFileStatus(b.transferId, TransferStatus.ABORTED);
           handlePresignUploadError(error);
           throw error;
         }
 
-        const completedTransfer = await confirmUpload(id, etag);
-        setCurrentFile(completedTransfer);
+        try {
+          // confirm: on failure assume none of the batch becomes available
+          const completedTransfers = await confirmUpload({ files: uploaded });
+          for (const transfer of completedTransfers) upsertCurrentFile(transfer);
+        } catch (error) {
+          for (const b of batch) updateCurrentFileStatus(b.transferId, TransferStatus.ABORTED);
+          throw error;
+        }
       }
 
-      toast.success('File uploaded successfully.');
+      // process large files
+      for (const p of large) {
+        updateCurrentFileStatus(p.provisional.id, TransferStatus.PENDING);
+
+        try {
+          const totalParts = calculateTotalParts(p.file.size, PART_SIZE_BYTES);
+          const { s3UploadId, id: fileTransferId } = await initMultipartUpload({
+            filename: p.file.name,
+            contentType: p.contentType,
+            sizeBytes: p.file.size,
+            totalParts,
+          });
+
+          // upload parts concurrently
+          const uploadedParts: UploadedPart[] = [];
+          for (let partNumber = 1; partNumber <= totalParts; partNumber += 1) {
+            const start = (partNumber - 1) * PART_SIZE_BYTES;
+            const end = Math.min(start + PART_SIZE_BYTES, p.file.size);
+            const chunk = p.file.slice(start, end);
+
+            const { method, url, headers } = await getMultipartPartUrl({
+              fileTransferId,
+              s3UploadId,
+              partNumber,
+            });
+
+            let etag = '';
+            try {
+              etag = await uploadChunkToPresignedUrl(url, method ?? 'PUT', headers, chunk);
+            } catch (error) {
+              handlePresignUploadError(error);
+              throw error;
+            }
+
+            uploadedParts.push({ partNumber, etag });
+          }
+
+          // complete multipart upload
+          const completedTransfer = await completeMultipartUpload({
+            fileTransferId,
+            s3UploadId,
+            parts: uploadedParts,
+          });
+
+          upsertCurrentFile(completedTransfer);
+          removeCurrentFile(p.provisional.id);
+        } catch (error) {
+          updateCurrentFileStatus(p.provisional.id, TransferStatus.ABORTED);
+          toast.error(error instanceof Error ? error.message : 'Failed to upload file.');
+        }
+      }
+
+      toast.success('Upload finished.');
     } catch (error) {
-      setCurrentFileStatus(TransferStatus.ABORTED);
       toast.error(error instanceof Error ? error.message : 'Failed to upload file.');
     }
   };
 
   return (
     <>
-      <input ref={uploadInputRef} type="file" onChange={handleUploadChange} hidden />
+      <input ref={uploadInputRef} type="file" multiple onChange={handleUploadChange} hidden />
       <button
         className="action-panel-button"
         type="button"
