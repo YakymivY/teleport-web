@@ -1,15 +1,27 @@
 import { File, X } from 'lucide-react';
 import { Tooltip } from '../../../../../ui/Tooltip';
 import { getStatusClass } from './utils/getStatusClass';
+import { useWorkspaceDropzone } from './hooks/useWorkspaceDropzone';
 import { useWorkspaceUpload } from './hooks/useWorkspaceUpload';
 import './WorkspaceUpload.css';
 
 export function WorkspaceUpload() {
   const { visibleTransfers, loading, deletingTransferId, handleDeleteTransfer } =
     useWorkspaceUpload();
+  const { getRootProps, getInputProps, isDragActive } = useWorkspaceDropzone();
 
   return (
-    <section className="workspace-section workspace-section--upload">
+    <section
+      {...getRootProps({
+        className: 'workspace-section workspace-section--upload',
+      })}
+    >
+      <input {...getInputProps()} />
+      {isDragActive ? (
+        <div className="workspace-upload-drag-overlay" aria-hidden="true">
+          <div className="workspace-upload-drag-overlay__inner">Drop files to upload</div>
+        </div>
+      ) : null}
       <div className="workspace-section__content workspace-upload-content">
         {loading ? <i className="workspace-upload-state">Loading…</i> : null}
 
