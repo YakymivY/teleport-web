@@ -46,7 +46,7 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     const errorMessage = status ? getErrorMessage(status) : null;
 
-    if (status === 401 && !isHandling401) {
+    if (status === 401 && !isHandling401 && window.location.pathname !== '/login') {
       isHandling401 = true;
       if (errorMessage) {
         toast.error(errorMessage);
