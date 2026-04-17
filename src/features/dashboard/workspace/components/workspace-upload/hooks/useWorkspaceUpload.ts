@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { TransferStatus } from '../../../../models/transfer-status.enum.ts';
 import type { FileTransferResponse } from '../../../../models/FileTransferResponse.ts';
 import { deleteFileTransfer, fetchSourceFileTransfers } from '../api/workspace-upload.api';
 import { useUploadStore } from '../../../../../../store/upload/useUploadStore';
+import { useFileDeletedEvent } from '../../../hooks/useFileDeletedEvent';
 
 export function useWorkspaceUpload() {
   const [transfers, setTransfers] = useState<FileTransferResponse[]>([]);
@@ -50,6 +51,12 @@ export function useWorkspaceUpload() {
       cancelled = true;
     };
   }, []);
+
+  const handleFileDeleted = useCallback((id: string) => {
+    setTransfers((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  useFileDeletedEvent(handleFileDeleted);
 
   useEffect(() => {
     const available = currentFiles.filter((f) => f.status === TransferStatus.AVAILABLE);

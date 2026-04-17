@@ -1,9 +1,11 @@
 import { Download, File, Trash } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Tooltip } from '../../../../../ui/Tooltip';
 import type { FileTransferResponse } from '../../../models/FileTransferResponse.ts';
 import { deleteFileTransfer, downloadFileTransfer, fetchDestinationFileTransfers } from './api/workspace-download.api';
+import { useFileAvailableEvent } from './hooks/useFileAvailableEvent';
+import { useFileDeletedEvent } from '../../hooks/useFileDeletedEvent';
 import type { DeleteFileRequest } from './types/DeleteFileRequest';
 import './WorkspaceDownload.css';
 
@@ -14,6 +16,18 @@ export function WorkspaceDownload() {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadedTransferIds, setDownloadedTransferIds] = useState<Set<string>>(() => new Set());
   const [deletingTransferId, setDeletingTransferId] = useState<string | null>(null);
+
+  const handleFileAvailable = useCallback((file: FileTransferResponse) => {
+    setTransfers((prev) => [file, ...prev]);
+  }, []);
+
+  useFileAvailableEvent(handleFileAvailable);
+
+  const handleFileDeleted = useCallback((id: string) => {
+    setTransfers((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  useFileDeletedEvent(handleFileDeleted);
 
   const handleDownload = async (transfer: FileTransferResponse) => {
     setDownloadingTransferId(transfer.id);
