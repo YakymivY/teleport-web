@@ -1,11 +1,14 @@
 import { ArrowRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSelectedDeviceStore } from '../../../store/device/useSelectedDeviceStore';
 import type { Device } from './types/types';
+import type { UserDeviceDto } from './types/types';
 import { AddButton } from './components/add-button/AddButton';
 import { DeleteButton } from './components/delete-button/DeleteButton';
 import { RenameButton } from './components/rename-button/RenameButton';
 import { fetchDevices } from './api/device-panel.api';
+import { useDeviceConnectedEvent } from './hooks/useDeviceConnectedEvent';
+import { useDeviceDisconnectedEvent } from './hooks/useDeviceDisconnectedEvent';
 import './DevicePanel.css';
 
 export function DevicePanel() {
@@ -46,6 +49,33 @@ export function DevicePanel() {
       cancelled = true;
     };
   }, []);
+
+  const handleDeviceConnected = useCallback((dto: UserDeviceDto) => {
+    const device: Device = {
+      id: dto.id,
+      name: dto.name,
+      createdAt: new Date(dto.createdAt),
+      lastSeenAt: dto.lastSeenAt ? new Date(dto.lastSeenAt) : null,
+    };
+    setDevices((prev) => {
+      if (prev.some((d) => d.id === device.id)) return prev;
+      const next = [...prev, device];
+      if (next.length === 1) setSelectedDeviceId(device.id);
+      return next;
+    });
+  }, []);
+
+  useDeviceConnectedEvent(handleDeviceConnected);
+
+  const handleDeviceDisconnected = useCallback((id: string) => {
+    setDevices((prev) => {
+      const next = prev.filter((d) => d.id !== id);
+      if (selectedDeviceId === id) setSelectedDeviceId(next[0]?.id ?? null);
+      return next;
+    });
+  }, [selectedDeviceId, setSelectedDeviceId]);
+
+  useDeviceDisconnectedEvent(handleDeviceDisconnected);
 
   const handleRenamed = (renamedDevice: Device) => {
     setDevices((prev) =>
