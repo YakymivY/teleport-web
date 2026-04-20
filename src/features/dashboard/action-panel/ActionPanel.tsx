@@ -1,6 +1,6 @@
 import { UploadButton } from './components/upload-button/UploadButton';
 import { LogoutButton } from './components/logout-button/LogoutButton';
-import { TrafficButton } from './components/traffice-button/TrafficButton';
+import { TrafficButton } from './components/traffic-button/TrafficButton';
 import './ActionPanel.css';
 
 export function ActionPanel() {

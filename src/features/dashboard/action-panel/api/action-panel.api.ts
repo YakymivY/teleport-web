@@ -8,6 +8,7 @@ import type { UploadSingleParams } from '../types/UploadSingleParams.ts';
 import type { UploadSingleResponse } from '../types/UploadSingleResponse.ts';
 import type { ConfirmSingleUploadParams } from '../types/ConfirmSingleUploadParams.ts';
 import type { FileTransferResponse } from '../../models/FileTransferResponse.ts';
+import type { UserTrafficResponse } from '../types/UserTrafficResponse.ts';
 import { useSelectedDeviceStore } from '../../../../store/device/useSelectedDeviceStore.ts';
 
 // this function is used to add the destination device id to the request
@@ -17,6 +18,11 @@ function addDestinationDeviceId() {
     throw new Error('No destination device selected.');
   }
   return destinationDeviceId;
+}
+
+export async function getUserTraffic() {
+  const response = await apiClient.get<UserTrafficResponse>('/users/traffic');
+  return response.data;
 }
 
 export async function logout(endpoint: '/auth/logout' | '/auth/logout-all') {
