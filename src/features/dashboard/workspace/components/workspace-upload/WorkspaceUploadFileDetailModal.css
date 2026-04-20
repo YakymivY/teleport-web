@@ -1,0 +1,35 @@
+.file-detail-modal__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 1rem;
+  word-break: break-all;
+}
+
+.file-detail-modal__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.file-detail-modal__row + .file-detail-modal__row td {
+  border-top: 1px solid rgba(161, 111, 236, 0.25);
+}
+
+.file-detail-modal__label,
+.file-detail-modal__value {
+  padding: 0.45rem 0;
+  font-size: 0.875rem;
+  vertical-align: top;
+}
+
+.file-detail-modal__label {
+  color: #888;
+  white-space: nowrap;
+  padding-right: 1.5rem;
+  font-weight: 500;
+}
+
+.file-detail-modal__value {
+  color: #1a1a1a;
+  word-break: break-all;
+}

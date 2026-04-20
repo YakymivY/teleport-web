@@ -6,6 +6,9 @@ export function createProvisionalTransfer(file: File): FileTransferResponse {
   return {
     id: `local-${file.name}-${file.lastModified}-${file.size}`,
     sourceDeviceId: '',
+    destinationDeviceId: null,
+    sourceDeviceName: '',
+    destinationDeviceName: null,
     filename: file.name,
     mimeType: file.type || 'application/octet-stream',
     sizeBytes: file.size,

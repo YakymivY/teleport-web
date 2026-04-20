@@ -1,14 +1,18 @@
 import { File, X } from 'lucide-react';
+import { useState } from 'react';
 import { Tooltip } from '../../../../../ui/Tooltip';
 import { getStatusClass } from './utils/getStatusClass';
 import { useWorkspaceDropzone } from './hooks/useWorkspaceDropzone';
 import { useWorkspaceUpload } from './hooks/useWorkspaceUpload';
+import { WorkspaceUploadFileDetailModal } from './WorkspaceUploadFileDetailModal';
+import type { FileTransferResponse } from '../../../models/FileTransferResponse';
 import './WorkspaceUpload.css';
 
 export function WorkspaceUpload() {
   const { visibleTransfers, loading, deletingTransferId, handleDeleteTransfer } =
     useWorkspaceUpload();
   const { getRootProps, getInputProps, isDragActive } = useWorkspaceDropzone();
+  const [selectedTransfer, setSelectedTransfer] = useState<FileTransferResponse | null>(null);
 
   return (
     <section
@@ -35,6 +39,7 @@ export function WorkspaceUpload() {
               <div
                 key={transfer.id}
                 className={`workspace-upload-file ${isDeleting ? 'workspace-upload-file--deleting' : ''}`}
+                onClick={() => setSelectedTransfer(transfer)}
               >
                 {isDeleting ? (
                   <div className="workspace-upload-file-deleting-overlay" aria-hidden="true" />
@@ -44,7 +49,7 @@ export function WorkspaceUpload() {
                     className="workspace-upload-file-cancel"
                     type="button"
                     aria-label="Delete file transfer"
-                    onClick={() => void handleDeleteTransfer(transfer.id)}
+                    onClick={(e) => { e.stopPropagation(); void handleDeleteTransfer(transfer.id); }}
                     disabled={isDeleting}
                   >
                     <X size={14} strokeWidth={3} />
@@ -64,6 +69,11 @@ export function WorkspaceUpload() {
           })}
         </div>
       </div>
+
+      <WorkspaceUploadFileDetailModal
+        transfer={selectedTransfer}
+        onClose={() => setSelectedTransfer(null)}
+      />
     </section>
   );
 }

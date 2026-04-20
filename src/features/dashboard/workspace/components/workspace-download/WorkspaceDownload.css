@@ -32,7 +32,7 @@
   align-items: center;
   justify-content: space-between;
   min-height: 90px;
-  cursor: default;
+  cursor: pointer;
 }
 
 .workspace-download-file-preview {

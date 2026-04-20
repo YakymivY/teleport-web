@@ -7,6 +7,7 @@ import { deleteFileTransfer, downloadFileTransfer, fetchDestinationFileTransfers
 import { useFileAvailableEvent } from './hooks/useFileAvailableEvent';
 import { useFileDeletedEvent } from '../../hooks/useFileDeletedEvent';
 import type { DeleteFileRequest } from './types/DeleteFileRequest';
+import { WorkspaceUploadFileDetailModal } from '../workspace-upload/WorkspaceUploadFileDetailModal';
 import './WorkspaceDownload.css';
 
 export function WorkspaceDownload() {
@@ -16,6 +17,7 @@ export function WorkspaceDownload() {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadedTransferIds, setDownloadedTransferIds] = useState<Set<string>>(() => new Set());
   const [deletingTransferId, setDeletingTransferId] = useState<string | null>(null);
+  const [selectedTransfer, setSelectedTransfer] = useState<FileTransferResponse | null>(null);
 
   const handleFileAvailable = useCallback((file: FileTransferResponse) => {
     setTransfers((prev) => [file, ...prev]);
@@ -99,7 +101,7 @@ export function WorkspaceDownload() {
 
         <div className="workspace-download-list">
           {transfers.map((transfer) => (
-            <div key={transfer.id} className="workspace-download-file">
+            <div key={transfer.id} className="workspace-download-file" onClick={() => setSelectedTransfer(transfer)}>
               <div className="workspace-download-file-preview" aria-hidden="true">
                 <File size={50} />
               </div>
@@ -121,7 +123,7 @@ export function WorkspaceDownload() {
                       className="workspace-download-file-action"
                       type="button"
                       aria-label="Download file"
-                      onClick={() => void handleDownload(transfer)}
+                      onClick={(e) => { e.stopPropagation(); void handleDownload(transfer); }}
                       disabled={deletingTransferId === transfer.id || downloadingTransferId === transfer.id}
                     >
                       <Download size={14} strokeWidth={2.5} />
@@ -130,7 +132,7 @@ export function WorkspaceDownload() {
                       className="workspace-download-file-action"
                       type="button"
                       aria-label="Delete file transfer"
-                      onClick={() => void handleDeleteTransfer(transfer.id)}
+                      onClick={(e) => { e.stopPropagation(); void handleDeleteTransfer(transfer.id); }}
                       disabled={downloadingTransferId === transfer.id || deletingTransferId === transfer.id}
                     >
                       <Trash size={14} strokeWidth={2.5} />
@@ -145,6 +147,11 @@ export function WorkspaceDownload() {
           ))}
         </div>
       </div>
+
+      <WorkspaceUploadFileDetailModal
+        transfer={selectedTransfer}
+        onClose={() => setSelectedTransfer(null)}
+      />
     </section>
   );
 }
