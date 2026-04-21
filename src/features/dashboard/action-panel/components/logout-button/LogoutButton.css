@@ -11,27 +11,31 @@
   gap: 0.4rem;
 }
 
-.action-panel-modal-button {
+.action-panel-button.action-panel-modal-button {
   width: 100%;
   height: auto;
   padding: 0.4rem 0.75rem;
   justify-content: center;
 }
 
-.action-panel-modal-button--primary {
+.action-panel-button.action-panel-modal-button--primary {
   background-color: #a16fec;
   border-color: #a16fec;
 }
 
-.action-panel-modal-button--primary:hover {
-  background-color: #e0cffa;
-  border-color: #e0cffa;
+.action-panel-button.action-panel-modal-button--primary:hover {
+  background-color: #8b5bd3;
+  border-color: #8b5bd3;
 }
 
-.action-panel-modal-button--primary .action-panel-button-letter {
+.action-panel-button.action-panel-modal-button--primary .action-panel-button-letter {
   color: #ffffff;
 }
 
-.action-panel-modal-button--secondary {
+.action-panel-button.action-panel-modal-button--secondary {
   background-color: transparent;
+}
+
+.action-panel-button.action-panel-modal-button--secondary:hover {
+  background-color: rgba(161, 111, 236, 0.1);
 }

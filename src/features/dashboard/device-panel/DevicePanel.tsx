@@ -98,6 +98,9 @@ export function DevicePanel() {
       <div className="device-panel-title">your devices</div>
       {loading ? <div className="device-panel-state"><i>Loading…</i></div> : null}
       {error ? <div className="device-panel-state"><i>{error}</i></div> : null}
+      {!loading && !error && devices.length === 0 ? (
+        <div className="device-panel-state"><i>No devices connected.</i></div>
+      ) : null}
       <div className="device-panel-list">
         {devices.map((device) => {
           const isActive = selectedDeviceId === device.id;

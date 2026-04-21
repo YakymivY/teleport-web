@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Modal } from '../../../../../ui/Modal';
 import { startPairing } from '../../api/device-panel.api';
+import { useDeviceConnectedEvent } from '../../hooks/useDeviceConnectedEvent';
 import './AddButton.css';
 
 export function AddButton() {
@@ -16,6 +17,10 @@ export function AddButton() {
     setPairingError(null);
     setPairingLoading(false);
   };
+
+  useDeviceConnectedEvent(useCallback(() => {
+    if (isModalOpen) closeModal();
+  }, [isModalOpen]));
 
   const handleStartPairing = async () => {
     setPairingLoading(true);
