@@ -23,7 +23,7 @@
   position: absolute;
   inset: 12px;
   border-radius: 0.75rem;
-  border: 2px dashed rgba(161, 111, 236, 0.7);
+  border: 2px dashed rgba(11, 176, 173, 0.7);
   background: rgba(255, 255, 255, 0.6);
   z-index: 5;
   display: flex;
@@ -37,7 +37,7 @@
   font-weight: 600;
   color: #0bb0ad;
   background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(161, 111, 236, 0.35);
+  border: 1px solid rgba(11, 176, 173, 0.35);
   padding: 10px 12px;
   border-radius: 999px;
 }
@@ -61,11 +61,12 @@
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 10px;
   align-content: start;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  padding: 10px;
 }
 
 .workspace-upload-file {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.9);
   transition: background-color 120ms ease-out;
   border-radius: 10px;
   padding: 10px 12px;
@@ -80,7 +81,7 @@
 }
 
 .workspace-upload-file:hover {
-  background: rgba(161, 111, 236, 0.05);
+  background: rgba(11, 176, 173, 0.05);
 }
 
 .workspace-upload-file-deleting-overlay {
@@ -123,7 +124,7 @@
 }
 
 .workspace-upload-file-cancel:hover {
-  background-color: rgba(161, 111, 236, 0.12);
+  background-color: rgba(11, 176, 173, 0.12);
 }
 
 .workspace-upload-file-preview {
@@ -140,7 +141,7 @@
   height: 4px;
   margin: 0 auto;
   border-radius: 999px;
-  background: rgba(161, 111, 236, 0.18);
+  background: rgba(11, 176, 173, 0.18);
   overflow: hidden;
 }
 

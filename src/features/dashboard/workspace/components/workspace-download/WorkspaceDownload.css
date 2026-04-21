@@ -38,11 +38,12 @@
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 10px;
   align-content: start;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  padding: 10px;
 }
 
 .workspace-download-file {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.9);
   transition: background-color 120ms ease-out;
   border-radius: 10px;
   padding: 10px 12px;
@@ -57,7 +58,7 @@
 }
 
 .workspace-download-file:hover {
-  background: rgba(161, 111, 236, 0.05);
+  background: rgba(11, 176, 173, 0.05);
 }
 
 .workspace-download-file-preview {
@@ -92,7 +93,7 @@
 }
 
 .workspace-download-file-action:hover {
-  background-color: rgba(161, 111, 236, 0.12);
+  background-color: rgba(11, 176, 173, 0.12);
 }
 
 .workspace-download-file-action:disabled {
@@ -106,7 +107,7 @@
   height: 4px;
   margin: 0 auto;
   border-radius: 999px;
-  background: rgba(161, 111, 236, 0.18);
+  background: rgba(11, 176, 173, 0.18);
   overflow: hidden;
 }
 
@@ -135,7 +136,7 @@
   gap: 5px;
   padding: 4px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(161, 111, 236, 0.3);
+  border: 1px solid rgba(11, 176, 173, 0.3);
   background: transparent;
   color: #0bb0ad;
   font-size: 0.8rem;
@@ -145,8 +146,8 @@
 }
 
 .workspace-download-all-btn:hover:not(:disabled) {
-  background-color: rgba(161, 111, 236, 0.08);
-  border-color: rgba(161, 111, 236, 0.5);
+  background-color: rgba(11, 176, 173, 0.08);
+  border-color: rgba(11, 176, 173, 0.5);
 }
 
 .workspace-download-all-btn:disabled {
