@@ -117,6 +117,38 @@
   background-color: #2aa35a;
 }
 
+.workspace-download-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 2px 2px;
+  flex-shrink: 0;
+}
+
+.workspace-download-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(161, 111, 236, 0.3);
+  background: transparent;
+  color: #a16fec;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.workspace-download-all-btn:hover:not(:disabled) {
+  background-color: rgba(161, 111, 236, 0.08);
+  border-color: rgba(161, 111, 236, 0.5);
+}
+
+.workspace-download-all-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .workspace-download-file-name {
   text-align: center;
   font-size: 0.95rem;

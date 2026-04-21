@@ -57,6 +57,14 @@ export function WorkspaceDownload() {
     }
   };
 
+  const pendingTransfers = transfers.filter((t) => !downloadedTransferIds.has(t.id));
+
+  const handleDownloadAll = async () => {
+    for (const transfer of pendingTransfers) {
+      await handleDownload(transfer);
+    }
+  };
+
   const handleDeleteTransfer = async (fileTransferId: string) => {
     const params: DeleteFileRequest = { fileTransferId };
     setDeletingTransferId(fileTransferId);
@@ -147,6 +155,18 @@ export function WorkspaceDownload() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="workspace-download-footer">
+        <button
+          className="workspace-download-all-btn"
+          type="button"
+          onClick={() => void handleDownloadAll()}
+          disabled={pendingTransfers.length === 0 || downloadingTransferId !== null}
+        >
+          <Download size={13} strokeWidth={2.5} />
+          Download all
+        </button>
       </div>
 
       <WorkspaceUploadFileDetailModal
