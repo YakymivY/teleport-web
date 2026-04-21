@@ -11,9 +11,9 @@
 }
 
 .workspace-divider {
-  height: 1px;
+  height: 2px;
   width: 100%;
-  background: #e0cffa;
+  background: rgba(161, 111, 236, 0.1);
   flex: 0 0 auto;
 }
 

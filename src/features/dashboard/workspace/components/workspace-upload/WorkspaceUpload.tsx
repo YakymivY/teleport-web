@@ -21,6 +21,7 @@ export function WorkspaceUpload() {
       })}
     >
       <input {...getInputProps()} />
+      <span className="workspace-upload-title" aria-hidden="true">UPLOAD</span>
       {isDragActive ? (
         <div className="workspace-upload-drag-overlay" aria-hidden="true">
           <div className="workspace-upload-drag-overlay__inner">Drop files to upload</div>

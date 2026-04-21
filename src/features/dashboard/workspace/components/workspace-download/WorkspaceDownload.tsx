@@ -96,6 +96,7 @@ export function WorkspaceDownload() {
 
   return (
     <section className="workspace-section workspace-section--download">
+      <span className="workspace-download-title" aria-hidden="true">DOWNLOAD</span>
       <div className="workspace-section__content workspace-download-content">
         {loading ? <i className="workspace-download-state">Loading…</i> : null}
 

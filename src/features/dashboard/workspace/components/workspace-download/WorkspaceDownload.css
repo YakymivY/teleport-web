@@ -1,4 +1,24 @@
 /* Transferred files list (destination device) */
+.workspace-section--download {
+  position: relative;
+}
+
+.workspace-download-title {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #a16fec;
+  opacity: 0.18;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  z-index: 0;
+}
+
 .workspace-download-content {
   display: flex;
   flex-direction: column;
