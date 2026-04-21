@@ -13,9 +13,9 @@ export function WorkspaceUploadFileDetailModal({ transfer, onClose }: Props) {
 
   const rows: [string, string][] = [
     ['Name', transfer.filename],
-    ['Type', transfer.mimeType],
+    ['Type', transfer.contentType ?? '—'],
     ['Size', formatBytes(transfer.sizeBytes)],
-    ['Source', transfer.sourceDeviceName],
+    ['Source', transfer.sourceDeviceName ?? '—'],
     ['Destination', transfer.destinationDeviceName ?? '—'],
     ['Status', transfer.status.charAt(0).toUpperCase() + transfer.status.slice(1)],
     ['Created', new Date(transfer.createdAt).toLocaleString()],

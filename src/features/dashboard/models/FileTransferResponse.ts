@@ -7,7 +7,7 @@ export interface FileTransferResponse {
   sourceDeviceName: string;
   destinationDeviceName: string | null;
   filename: string;
-  mimeType: string;
+  contentType: string | null;
   sizeBytes: number;
   status: TransferStatus;
   createdAt: string;

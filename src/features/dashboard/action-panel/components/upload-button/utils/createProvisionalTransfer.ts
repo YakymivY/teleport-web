@@ -10,7 +10,7 @@ export function createProvisionalTransfer(file: File): FileTransferResponse {
     sourceDeviceName: '',
     destinationDeviceName: null,
     filename: file.name,
-    mimeType: file.type || 'application/octet-stream',
+    contentType: file.type || null,
     sizeBytes: file.size,
     status: TransferStatus.INITIALIZED,
     createdAt: nowIso,
