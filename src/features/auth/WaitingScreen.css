@@ -14,7 +14,7 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  outline: 2px solid #e0cffa;
+  outline: 2px solid #bde8e7;
   outline-offset: 1rem;
 }
 
@@ -32,15 +32,15 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  background-color: #a16fec;
+  background-color: #0bb0ad;
   color: white;
   transition: background 0.2s ease;
 }
 
 .waiting-button:hover {
-  background-color: #8b5bd3;
+  background-color: #098e8c;
 }
 
 .waiting-button:active {
-  background-color: #7a4fc0;
+  background-color: #077574;
 }

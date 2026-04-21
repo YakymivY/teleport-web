@@ -11,7 +11,7 @@
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: 0.15em;
-  color: #a16fec;
+  color: #0bb0ad;
   opacity: 0.18;
   pointer-events: none;
   user-select: none;
@@ -35,7 +35,7 @@
 .workspace-upload-drag-overlay__inner {
   font-size: 14px;
   font-weight: 600;
-  color: #a16fec;
+  color: #0bb0ad;
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(161, 111, 236, 0.35);
   padding: 10px 12px;
@@ -109,7 +109,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a16fec;
+  color: #0bb0ad;
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms ease-out, background-color 120ms ease-out;
@@ -131,7 +131,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a16fec;
+  color: #0bb0ad;
 }
 
 .workspace-upload-file-status {
@@ -152,12 +152,12 @@
 
 .workspace-upload-file-status-fill--initialized {
   width: 25%;
-  background-color: #a16fec;
+  background-color: #0bb0ad;
 }
 
 .workspace-upload-file-status-fill--pending {
   width: 50%;
-  background-color: #a16fec;
+  background-color: #0bb0ad;
 }
 
 .workspace-upload-file-status-fill--available {

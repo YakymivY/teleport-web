@@ -18,12 +18,12 @@
   border-radius: 0.5rem;
   font-size: 1.4rem;
   text-align: center;
-  caret-color: #a16fec;
+  caret-color: #0bb0ad;
   color: gray;
 }
 
 .login-code-input:focus {
-  outline-color: #e0cffa;
+  outline-color: #bde8e7;
 }
 
 .login-button {
@@ -35,17 +35,17 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  background-color: #a16fec;
+  background-color: #0bb0ad;
   color: white;
   transition: background 0.2s ease;
 }
 
 .login-button:hover {
-  background-color: #8b5bd3;
+  background-color: #098e8c;
 }
 
 .login-button:active {
-  background-color: #7a4fc0;
+  background-color: #077574;
 }
 
 .login-button:disabled {

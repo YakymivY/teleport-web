@@ -1,8 +1,8 @@
 .device-panel-container {
   grid-area: device-panel;
-  background-color: #e0cffa;
+  background-color: #bde8e7;
   border-radius: 1rem;
-  outline: 2px solid #e0cffa;
+  outline: 2px solid #bde8e7;
   margin: 2px;
   border: 3px solid white;
   padding: 12px;
@@ -14,7 +14,7 @@
 .device-panel-title {
   font-weight: 600;
   font-size: 16px;
-  color: #a16fec;
+  color: #0bb0ad;
 }
 
 .device-panel-state {
@@ -58,5 +58,5 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a16fec;
+  color: #0bb0ad;
 }

@@ -8,7 +8,7 @@
 .traffic-modal-title {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #a16fec;
+  color: #0bb0ad;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0;
@@ -25,8 +25,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0.15rem;
-  background-color: #f5eeff;
-  border: 2px solid #e0cffa;
+  background-color: #edfbfb;
+  border: 2px solid #bde8e7;
   border-radius: 0.5rem;
   padding: 0.5rem 0.6rem;
 }
@@ -36,22 +36,22 @@
 }
 
 .traffic-card-icon--upload {
-  color: #a16fec;
+  color: #0bb0ad;
 }
 
 .traffic-card-icon--download {
-  color: #7a4fc0;
+  color: #077574;
 }
 
 .traffic-card-value {
   font-size: 1rem;
   font-weight: 700;
-  color: #2d1a4a;
+  color: #033635;
   line-height: 1.2;
 }
 
 .traffic-card-label {
   font-size: 0.7rem;
   font-weight: 500;
-  color: #8b5bd3;
+  color: #098e8c;
 }

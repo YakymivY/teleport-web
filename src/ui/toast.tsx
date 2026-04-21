@@ -8,7 +8,7 @@ export function AppToaster(props: ToasterProps) {
       gutter={12}
       toastOptions={{
         style: {
-          background: '#a16fec',
+          background: '#0bb0ad',
           color: 'white',
           borderRadius: '0.75rem',
           padding: '0.75rem 1rem',

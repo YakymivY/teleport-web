@@ -1,9 +1,9 @@
 .workspace-container {
   grid-area: workspace;
   border-radius: 1rem;
-  border: 3px solid #e0cffa;
+  border: 3px solid #bde8e7;
   outline-offset: 3px;
-  outline: 2px solid #e0cffa;
+  outline: 2px solid #bde8e7;
   margin: 5px;
   display: flex;
   flex-direction: column;

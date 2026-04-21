@@ -6,7 +6,7 @@
   padding: 0;
   cursor: pointer;
   background-color: rgba(255, 255, 255, 0.45);
-  color: #a16fec;
+  color: #0bb0ad;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,7 +22,7 @@
 }
 
 .device-panel-delete-button:focus-visible {
-  outline: 2px solid #a16fec;
+  outline: 2px solid #0bb0ad;
   outline-offset: 2px;
 }
 

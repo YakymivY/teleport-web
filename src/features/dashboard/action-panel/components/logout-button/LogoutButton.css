@@ -1,7 +1,7 @@
 .action-panel-button-letter {
   font-size: 1.2rem;
   font-weight: 500;
-  color: #a16fec;
+  color: #0bb0ad;
   transition: color 0.2s ease;
 }
 
@@ -19,13 +19,13 @@
 }
 
 .action-panel-button.action-panel-modal-button--primary {
-  background-color: #a16fec;
-  border-color: #a16fec;
+  background-color: #0bb0ad;
+  border-color: #0bb0ad;
 }
 
 .action-panel-button.action-panel-modal-button--primary:hover {
-  background-color: #8b5bd3;
-  border-color: #8b5bd3;
+  background-color: #098e8c;
+  border-color: #098e8c;
 }
 
 .action-panel-button.action-panel-modal-button--primary .action-panel-button-letter {

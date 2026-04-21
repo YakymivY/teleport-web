@@ -11,7 +11,7 @@
   height: 2.2rem;
   background-color: transparent;
   border-radius: 0.5rem;
-  border: 3px solid #e0cffa;
+  border: 3px solid #bde8e7;
   transition: 0.2s background-color ease;
   display: flex;
   align-items: center;
@@ -20,23 +20,23 @@
 }
 
 .action-panel-button:hover {
-  background-color: #e0cffa;
+  background-color: #bde8e7;
 }
 
 .action-panel-button:active {
-  border-color: #a16fec;
+  border-color: #0bb0ad;
 }
 
 .action-panel-button-icon {
   display: block;
-  color: #a16fec;
+  color: #0bb0ad;
   transition: color 0.2s ease;
 }
 
 .action-panel-button:hover .action-panel-button-icon {
-  color: #8b5bd3;
+  color: #098e8c;
 }
 
 .action-panel-button:active .action-panel-button-icon {
-  color: #7a4fc0;
+  color: #077574;
 }

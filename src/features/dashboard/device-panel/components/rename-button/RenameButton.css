@@ -19,7 +19,7 @@
   padding: 0;
   cursor: pointer;
   background-color: rgba(255, 255, 255, 0.45);
-  color: #a16fec;
+  color: #0bb0ad;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -35,7 +35,7 @@
 }
 
 .device-panel-rename-button:focus-visible {
-  outline: 2px solid #a16fec;
+  outline: 2px solid #0bb0ad;
   outline-offset: 2px;
 }
 
@@ -64,15 +64,15 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  background-color: #a16fec;
+  background-color: #0bb0ad;
   color: #ffffff;
   transition: background 0.2s ease;
 }
 
 .device-panel-rename-action-button:hover {
-  background-color: #8b5bd3;
+  background-color: #098e8c;
 }
 
 .device-panel-rename-action-button:active {
-  background-color: #7a4fc0;
+  background-color: #077574;
 }

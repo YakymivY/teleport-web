@@ -7,17 +7,17 @@
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  background-color: #a16fec;
+  background-color: #0bb0ad;
   color: #ffffff;
   transition: background 0.2s ease;
 }
 
 .device-panel-add-button:hover {
-  background-color: #8b5bd3;
+  background-color: #098e8c;
 }
 
 .device-panel-add-button:active {
-  background-color: #7a4fc0;
+  background-color: #077574;
 }
 
 .device-panel-modal {
@@ -38,6 +38,6 @@
   letter-spacing: 0.2em;
   font-size: 24px;
   font-weight: 600;
-  color: #a16fec;
+  color: #0bb0ad;
   user-select: all;
 }

@@ -11,7 +11,7 @@
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: 0.15em;
-  color: #a16fec;
+  color: #0bb0ad;
   opacity: 0.18;
   pointer-events: none;
   user-select: none;
@@ -65,7 +65,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a16fec;
+  color: #0bb0ad;
 }
 
 .workspace-download-file-actions {
@@ -86,7 +86,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a16fec;
+  color: #0bb0ad;
   transition: background-color 120ms ease-out;
   cursor: pointer;
 }
@@ -114,7 +114,7 @@
   height: 100%;
   border-radius: inherit;
   transition: width 120ms ease-out;
-  background-color: #a16fec;
+  background-color: #0bb0ad;
 }
 
 .workspace-download-file-progress-fill--downloaded {
@@ -137,7 +137,7 @@
   border-radius: 999px;
   border: 1px solid rgba(161, 111, 236, 0.3);
   background: transparent;
-  color: #a16fec;
+  color: #0bb0ad;
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
