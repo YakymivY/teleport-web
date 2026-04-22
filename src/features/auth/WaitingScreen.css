@@ -18,6 +18,15 @@
   outline-offset: 1rem;
 }
 
+@media (max-width: 480px) {
+  .waiting-content {
+    width: calc(100vw - 2rem);
+    margin: 0 1rem;
+    box-sizing: border-box;
+    outline-offset: 0.5rem;
+  }
+}
+
 .waiting-title {
   margin: 0;
   font-size: 1.4rem;
