@@ -17,6 +17,7 @@ export function DevicePanel() {
   const [error, setError] = useState<string | null>(null);
   const selectedDeviceId = useSelectedDeviceStore((state) => state.selectedDeviceId);
   const setSelectedDeviceId = useSelectedDeviceStore((state) => state.setSelectedDeviceId);
+  const setSelectedDeviceName = useSelectedDeviceStore((state) => state.setSelectedDeviceName);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,6 +33,7 @@ export function DevicePanel() {
         const currentSelectedDeviceId = useSelectedDeviceStore.getState().selectedDeviceId;
         if (!currentSelectedDeviceId && devices[0]) {
           useSelectedDeviceStore.getState().setSelectedDeviceId(devices[0].id);
+          useSelectedDeviceStore.getState().setSelectedDeviceName(devices[0].name);
         }
       } catch {
         if (cancelled) return;
@@ -60,7 +62,10 @@ export function DevicePanel() {
     setDevices((prev) => {
       if (prev.some((d) => d.id === device.id)) return prev;
       const next = [...prev, device];
-      if (next.length === 1) setSelectedDeviceId(device.id);
+      if (next.length === 1) {
+        setSelectedDeviceId(device.id);
+        setSelectedDeviceName(device.name);
+      }
       return next;
     });
   }, []);
@@ -70,10 +75,13 @@ export function DevicePanel() {
   const handleDeviceDisconnected = useCallback((id: string) => {
     setDevices((prev) => {
       const next = prev.filter((d) => d.id !== id);
-      if (selectedDeviceId === id) setSelectedDeviceId(next[0]?.id ?? null);
+      if (selectedDeviceId === id) {
+        setSelectedDeviceId(next[0]?.id ?? null);
+        setSelectedDeviceName(next[0]?.name ?? null);
+      }
       return next;
     });
-  }, [selectedDeviceId, setSelectedDeviceId]);
+  }, [selectedDeviceId, setSelectedDeviceId, setSelectedDeviceName]);
 
   useDeviceDisconnectedEvent(handleDeviceDisconnected);
 
@@ -81,6 +89,9 @@ export function DevicePanel() {
     setDevices((prev) =>
       prev.map((device) => (device.id === renamedDevice.id ? renamedDevice : device))
     );
+    if (selectedDeviceId === renamedDevice.id) {
+      setSelectedDeviceName(renamedDevice.name);
+    }
   };
 
   const handleDeleted = (deviceId: string) => {
@@ -88,6 +99,7 @@ export function DevicePanel() {
       const nextDevices = prev.filter((device) => device.id !== deviceId);
       if (selectedDeviceId === deviceId) {
         setSelectedDeviceId(nextDevices[0]?.id ?? null);
+        setSelectedDeviceName(nextDevices[0]?.name ?? null);
       }
       return nextDevices;
     });
@@ -109,7 +121,7 @@ export function DevicePanel() {
             <div
               key={device.id}
               className={`device-panel-device${isActive ? ' device-panel-device--active' : ''}`}
-              onClick={() => setSelectedDeviceId(device.id)}
+              onClick={() => { setSelectedDeviceId(device.id); setSelectedDeviceName(device.name); }}
               role="button"
               tabIndex={0}
             >

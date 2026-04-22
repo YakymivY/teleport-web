@@ -11,6 +11,12 @@
   gap: 10px;
 }
 
+@media (max-width: 480px) {
+  .device-panel-container {
+    display: none;
+  }
+}
+
 .device-panel-title {
   font-weight: 600;
   font-size: 16px;

@@ -11,3 +11,21 @@
     "workspace device-panel";
   grid-gap: 0.5rem;
 }
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "action-panel"
+      "workspace";
+  }
+
+  .dashboard--show-devices .workspace-container {
+    display: none;
+  }
+
+  .dashboard--show-devices .device-panel-container {
+    display: flex;
+    grid-area: workspace;
+  }
+}

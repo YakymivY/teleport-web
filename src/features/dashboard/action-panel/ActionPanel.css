@@ -6,6 +6,21 @@
   gap: 0.3rem;
 }
 
+.action-panel-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+@media (max-width: 480px) {
+  .action-panel-container {
+    justify-content: space-between;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.5rem;
+    background: rgba(189, 232, 231, 0.5);
+  }
+}
+
 .action-panel-button {
   width: 2.2rem;
   height: 2.2rem;

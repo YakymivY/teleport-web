@@ -1,0 +1,42 @@
+.device-button {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .device-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    height: 2.2rem;
+    padding: 0 0.75rem;
+    border: 3px solid #bde8e7;
+    border-radius: 0.5rem;
+    background-color: transparent;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #0bb0ad;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    max-width: 9rem;
+    overflow: hidden;
+  }
+
+  .device-button:hover {
+    background-color: #bde8e7;
+  }
+
+  .device-button:active {
+    border-color: #0bb0ad;
+  }
+
+  .device-button-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .device-button-icon {
+    display: block;
+  }
+}
