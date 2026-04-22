@@ -55,3 +55,25 @@
 .login-button-code {
   padding-inline: 1.1rem;
 }
+
+@media (max-width: 480px) {
+  .login-code-row {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .login-code-container {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .login-code-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .login-button-code {
+    padding-inline: 0.9rem;
+  }
+}

@@ -18,6 +18,24 @@
   outline-offset: 1rem;
 }
 
+@media (max-width: 480px) {
+  .login-container {
+    align-items: stretch;
+  }
+
+  .login-content {
+    flex: 1;
+    width: 100%;
+    padding: 1.5rem;
+    border-radius: 0;
+    outline: none;
+  }
+
+  .login-content .login-button {
+    width: 100%;
+  }
+}
+
 .login-or {
   font-size: 0.8rem;
   color: gray;
