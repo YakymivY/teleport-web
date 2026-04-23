@@ -50,6 +50,12 @@
   overflow-y: auto;
 }
 
+@media (max-width: 480px) {
+  .workspace-upload-content {
+    padding: 10px 0;  
+  }
+}
+
 .workspace-upload-state {
   font-size: 14px;
   opacity: 0.9;
@@ -178,4 +184,62 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  .workspace-upload-list {
+    padding: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-upload-file {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    min-height: auto;
+    min-width: 0;
+    padding: 6px 8px;
+  }
+
+  .workspace-upload-file-preview {
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .workspace-upload-file-preview svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .workspace-upload-file-cancel {
+    position: static;
+    order: 3;
+    opacity: 1;
+    pointer-events: auto;
+    width: 30px;
+    height: 30px;
+  }
+
+  .workspace-upload-file-cancel svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .workspace-upload-file-name {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    order: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .workspace-upload-file-status {
+    order: 2;
+    width: 80px;
+    flex-shrink: 0;
+    margin: 0;
+  }
 }

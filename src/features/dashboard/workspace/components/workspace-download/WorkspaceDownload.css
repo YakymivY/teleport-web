@@ -27,6 +27,12 @@
   overflow-y: auto;
 }
 
+@media (max-width: 480px) {
+  .workspace-download-content {
+    padding: 10px 0;
+  }
+}
+
 .workspace-download-state {
   font-size: 14px;
   opacity: 0.9;
@@ -162,4 +168,62 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  .workspace-download-list {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+
+  .workspace-download-file {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    min-height: auto;
+    min-width: 0;
+    padding: 6px 8px;
+  }
+
+  .workspace-download-file-preview {
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .workspace-download-file-preview svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .workspace-download-file-action {
+    width: 30px;
+    height: 30px;
+  }
+
+  .workspace-download-file-action svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .workspace-download-file-name {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    order: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .workspace-download-file-actions {
+    order: 2;
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .workspace-download-file-progress {
+    width: 80px;
+    margin: 0;
+  }
 }
