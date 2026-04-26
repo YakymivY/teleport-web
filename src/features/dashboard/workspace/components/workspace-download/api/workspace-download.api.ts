@@ -2,11 +2,13 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { FileTransfer } from '@capacitor/file-transfer';
 import type { FileTransferError } from '@capacitor/file-transfer';
+import { Media } from '@capacitor-community/media';
 import { apiClient } from '../../../../../../api/apiClient';
 import type { FileTransferResponse } from '../../../../models/FileTransferResponse.ts';
 import type { DeleteFileRequest } from '../types/DeleteFileRequest.ts';
 import type { DownloadFileTransferParams } from '../types/DownloadFileTransferParams';
 import streamSaver from 'streamsaver';
+import { getMediaType } from '../utils/get-media-type.ts';
 
 export async function fetchDestinationFileTransfers(): Promise<FileTransferResponse[]> {
   const response = await apiClient.get<FileTransferResponse[]>('/files/file-transfers/destination');
@@ -68,7 +70,9 @@ async function downloadFileNative(params: {
 }): Promise<boolean> {
   const { url, token, filename, onProgress } = params;
 
-  const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Documents });
+  const mediaType = getMediaType(filename);
+  const directory = mediaType ? Directory.Cache : Directory.Documents;
+  const { uri } = await Filesystem.getUri({ path: filename, directory });
 
   const listenerHandle = onProgress
     ? await FileTransfer.addListener('progress', (status) => {
@@ -88,6 +92,12 @@ async function downloadFileNative(params: {
 
     if (onProgress) onProgress(100);
 
+    if (mediaType === 'image') {
+      await Media.savePhoto({ path: uri });
+    } else if (mediaType === 'video') {
+      await Media.saveVideo({ path: uri });
+    }
+
     return true;
   } catch (err: unknown) {
     const ftError = (err as { data?: FileTransferError }).data;
@@ -99,6 +109,9 @@ async function downloadFileNative(params: {
     }
     throw err;
   } finally {
+    if (mediaType) {
+      try { await Filesystem.deleteFile({ path: filename, directory: Directory.Cache }); } catch { /* ignore */ }
+    }
     await listenerHandle?.remove();
   }
 }
