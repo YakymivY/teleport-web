@@ -1,3 +1,7 @@
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { FileTransfer } from '@capacitor/file-transfer';
+import type { FileTransferError } from '@capacitor/file-transfer';
 import { apiClient } from '../../../../../../api/apiClient';
 import type { FileTransferResponse } from '../../../../models/FileTransferResponse.ts';
 import type { DeleteFileRequest } from '../types/DeleteFileRequest.ts';
@@ -56,6 +60,49 @@ async function pipeReadableToWritableWithProgress(params: {
   }
 }
 
+async function downloadFileNative(params: {
+  url: string;
+  token: string | null;
+  filename: string;
+  onProgress?: (percent: number) => void;
+}): Promise<boolean> {
+  const { url, token, filename, onProgress } = params;
+
+  const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Documents });
+
+  const listenerHandle = onProgress
+    ? await FileTransfer.addListener('progress', (status) => {
+        if (status.url === url && status.type === 'download' && status.lengthComputable && status.contentLength > 0) {
+          onProgress(Math.floor((status.bytes / status.contentLength) * 100));
+        }
+      })
+    : null;
+
+  try {
+    await FileTransfer.downloadFile({
+      url,
+      path: uri,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      progress: !!onProgress,
+    });
+
+    if (onProgress) onProgress(100);
+
+    return true;
+  } catch (err: unknown) {
+    const ftError = (err as { data?: FileTransferError }).data;
+    if (ftError?.httpStatus === 404) return false;
+    if (ftError?.httpStatus === 401) {
+      localStorage.removeItem('token');
+      window.location.assign('/login');
+      throw new Error('Unauthorized');
+    }
+    throw err;
+  } finally {
+    await listenerHandle?.remove();
+  }
+}
+
 export async function downloadFileTransfer(params: DownloadFileTransferParams): Promise<boolean> {
   const { fileTransferId, fallbackFilename, fallbackTotalBytes, onProgress } = params;
   const token = localStorage.getItem('token');
@@ -63,6 +110,15 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
   url.searchParams.set('fileTransferId', fileTransferId);
 
   if (onProgress) onProgress(0);
+
+  if (Capacitor.isNativePlatform()) {
+    return downloadFileNative({
+      url: url.toString(),
+      token,
+      filename: fallbackFilename ?? 'download.bin',
+      onProgress,
+    });
+  }
 
   // send request to download the file
   const response = await fetch(url.toString(), {

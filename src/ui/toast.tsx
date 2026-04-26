@@ -6,6 +6,7 @@ export function AppToaster(props: ToasterProps) {
     <Toaster
       position="top-right"
       gutter={12}
+      containerStyle={{ top: 'env(safe-area-inset-top)' }}
       toastOptions={{
         style: {
           background: '#0bb0ad',
