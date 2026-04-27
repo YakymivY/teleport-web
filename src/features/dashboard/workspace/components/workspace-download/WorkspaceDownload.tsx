@@ -50,6 +50,7 @@ export function WorkspaceDownload() {
         next.add(transfer.id);
         return next;
       });
+      toast.success(`Downloaded ${transfer.filename}`);
     } catch {
       toast.error('Failed to start download.');
     } finally {

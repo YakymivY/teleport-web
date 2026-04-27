@@ -50,7 +50,7 @@
 }
 
 .workspace-download-file {
-  transition: background-color 120ms ease-out;
+  transition: background 120ms ease-out;
   border-radius: 10px;
   padding: 10px 12px;
   color: gray;
@@ -61,10 +61,13 @@
   justify-content: space-between;
   min-height: 90px;
   cursor: pointer;
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .workspace-download-file:hover {
-  background: rgba(11, 176, 173, 0.05);
+  background:
+    linear-gradient(rgba(11, 176, 173, 0.08), rgba(11, 176, 173, 0.08)),
+    rgba(255, 255, 255, 0.52);
 }
 
 .workspace-download-file-preview {
@@ -180,10 +183,10 @@
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
-    min-height: auto;
+    gap: 6px;
+    min-height: 32px;
     min-width: 0;
-    padding: 6px 8px;
+    padding: 4px 8px;
   }
 
   .workspace-download-file-preview {
@@ -192,18 +195,18 @@
   }
 
   .workspace-download-file-preview svg {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
   }
 
   .workspace-download-file-action {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
   }
 
   .workspace-download-file-action svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   .workspace-download-file-name {
@@ -220,6 +223,7 @@
     order: 2;
     width: auto;
     flex-shrink: 0;
+    min-height: 24px;
   }
 
   .workspace-download-file-progress {

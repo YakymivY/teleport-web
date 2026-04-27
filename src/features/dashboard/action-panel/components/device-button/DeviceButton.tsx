@@ -19,7 +19,7 @@ export function DeviceButton({ showDevices, onClick }: DeviceButtonProps) {
       {showDevices
         ? <X size={16} className="device-button-icon" />
         : <>
-            <TabletSmartphone size={16} className="device-button-icon" />
+            <TabletSmartphone size={24} className="device-button-icon" />
             <span className="device-button-label">{selectedDeviceName ?? 'no device'}</span>
           </>
       }
