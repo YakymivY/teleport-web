@@ -1,5 +1,6 @@
 .device-panel-device-name {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -9,6 +10,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .device-panel-rename-button {
@@ -40,7 +42,6 @@
 }
 
 .device-panel-rename-input {
-  flex: 1;
   height: 2rem;
   border: 1px solid rgba(11, 176, 173, 0.35);
   border-radius: 10px;
@@ -56,23 +57,15 @@
   box-shadow: 0 0 0 3px rgba(11, 176, 173, 0.2);
 }
 
-.device-panel-rename-action-button {
-  height: 2rem;
-  border: none;
-  border-radius: 10px;
-  padding: 0 0.9rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  background-color: #0bb0ad;
-  color: #ffffff;
-  transition: background 0.2s ease;
+.device-panel-rename-editing-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
-.device-panel-rename-action-button:hover {
-  background-color: #098e8c;
-}
-
-.device-panel-rename-action-button:active {
-  background-color: #077574;
+.device-panel-rename-editing-wrap .device-panel-rename-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
 }

@@ -16,10 +16,11 @@
 
 @media (max-width: 480px) {
   .dashboard-container {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "action-panel"
       "workspace";
+    min-width: 0;
   }
 
   .dashboard--show-devices .workspace-container {
@@ -29,5 +30,11 @@
   .dashboard--show-devices .device-panel-container {
     display: flex;
     grid-area: workspace;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    margin-left: 0;
+    margin-right: 0;
   }
 }
