@@ -68,7 +68,7 @@ export async function confirmUpload(params: ConfirmSingleUploadParams) {
 declare global {
   interface Window {
     electronS3?: {
-      put: (params: { url: string; headers: Record<string, string>; buffer: ArrayBuffer }) => Promise<{ status: number; etag: string | null }>;
+      put: (params: { url: string; method?: string; headers: Record<string, string>; buffer: ArrayBuffer }) => Promise<{ status: number; etag: string | null }>;
     };
   }
 }
@@ -107,6 +107,14 @@ export async function uploadChunkToPresignedUrl(
   headers: Record<string, string> | undefined,
   chunk: Blob,
 ) {
+  if (window.electronS3) {
+    const buffer = await chunk.arrayBuffer();
+    const result = await window.electronS3.put({ url, method: method || 'PUT', headers: headers ?? {}, buffer });
+    if (result.status < 200 || result.status >= 300) throw new Error('UPLOAD_FAILED');
+    if (!result.etag) throw new Error('ETAG_MISSING');
+    return result.etag;
+  }
+
   const response = await fetch(url, {
     method: method || 'PUT',
     headers,

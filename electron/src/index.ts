@@ -70,9 +70,9 @@ app.on('activate', async function () {
 // Place all ipc or other electron api calls and custom functionality under this line
 import { ipcMain, net } from 'electron';
 
-ipcMain.handle('electron-s3-put', (_event, { url, headers, buffer }: { url: string; headers: Record<string, string>; buffer: ArrayBuffer }) => {
+ipcMain.handle('electron-s3-put', (_event, { url, method = 'PUT', headers, buffer }: { url: string; method?: string; headers: Record<string, string>; buffer: ArrayBuffer }) => {
   return new Promise<{ status: number; etag: string | null }>((resolve, reject) => {
-    const req = net.request({ method: 'PUT', url });
+    const req = net.request({ method, url });
     for (const [k, v] of Object.entries(headers)) {
       req.setHeader(k, v);
     }
