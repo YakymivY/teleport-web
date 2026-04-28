@@ -1,4 +1,12 @@
 import { Capacitor } from '@capacitor/core';
+
+declare global {
+  interface Window {
+    electronDownload?: {
+      download: (params: { url: string; headers: Record<string, string>; filename: string }) => Promise<{ status: number }>;
+    };
+  }
+}
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { FileTransfer } from '@capacitor/file-transfer';
 import type { FileTransferError } from '@capacitor/file-transfer';
@@ -124,11 +132,32 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
 
   if (onProgress) onProgress(0);
 
+  const filename = fallbackFilename ?? 'download.bin';
+
+  if (window.electronDownload) {
+    const result = await window.electronDownload.download({
+      url: url.toString(),
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      filename,
+    });
+    if (result.status === 404) return false;
+    if (result.status === 401) {
+      localStorage.removeItem('token');
+      window.location.assign('/login');
+      throw new Error('Unauthorized');
+    }
+    if (result.status < 200 || result.status >= 300) {
+      throw new Error('Failed to start download.');
+    }
+    if (onProgress) onProgress(100);
+    return true;
+  }
+
   if (Capacitor.isNativePlatform()) {
     return downloadFileNative({
       url: url.toString(),
       token,
-      filename: fallbackFilename ?? 'download.bin',
+      filename,
       onProgress,
     });
   }
@@ -157,7 +186,6 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
   }
 
   // create a writable stream to write the file to the disk
-  const filename = fallbackFilename ?? 'download.bin';
   const contentLengthHeader = response.headers.get('content-length');
   const contentLength = contentLengthHeader ? Number(contentLengthHeader) : undefined;
   const totalBytes = Number.isFinite(contentLength) && (contentLength ?? 0) > 0 ? contentLength : fallbackTotalBytes;

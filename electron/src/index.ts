@@ -69,6 +69,9 @@ app.on('activate', async function () {
 
 // Place all ipc or other electron api calls and custom functionality under this line
 import { ipcMain, net } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
+
 
 ipcMain.handle('electron-s3-put', (_event, { url, method = 'PUT', headers, buffer }: { url: string; method?: string; headers: Record<string, string>; buffer: ArrayBuffer }) => {
   return new Promise<{ status: number; etag: string | null }>((resolve, reject) => {
@@ -84,6 +87,41 @@ ipcMain.handle('electron-s3-put', (_event, { url, method = 'PUT', headers, buffe
     });
     req.on('error', reject);
     req.write(Buffer.from(buffer));
+    req.end();
+  });
+});
+
+function uniqueDownloadPath(dir: string, filename: string): string {
+  const ext = path.extname(filename);
+  const base = path.basename(filename, ext);
+  let candidate = path.join(dir, filename);
+  let counter = 1;
+  while (fs.existsSync(candidate)) {
+    candidate = path.join(dir, `${base} (${counter})${ext}`);
+    counter++;
+  }
+  return candidate;
+}
+
+ipcMain.handle('electron-download', (_event, { url, headers, filename }: { url: string; headers: Record<string, string>; filename: string }) => {
+  return new Promise<{ status: number }>((resolve, reject) => {
+    const req = net.request({ method: 'GET', url });
+    for (const [k, v] of Object.entries(headers)) {
+      req.setHeader(k, v);
+    }
+    req.on('response', (res) => {
+      if (res.statusCode !== 200) {
+        res.on('data', () => {});
+        res.on('end', () => resolve({ status: res.statusCode }));
+        return;
+      }
+      const downloadPath = uniqueDownloadPath(app.getPath('downloads'), filename);
+      const fileStream = fs.createWriteStream(downloadPath);
+      res.on('data', (chunk: Buffer) => fileStream.write(chunk));
+      res.on('end', () => fileStream.end(() => resolve({ status: res.statusCode })));
+      res.on('error', (err) => { fileStream.destroy(); reject(err); });
+    });
+    req.on('error', reject);
     req.end();
   });
 });
