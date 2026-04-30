@@ -136,6 +136,36 @@
   background-color: rgba(11, 176, 173, 0.12);
 }
 
+.workspace-upload-file-resume {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e6a817;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out, background-color 120ms ease-out;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.workspace-upload-file:hover .workspace-upload-file-resume {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.workspace-upload-file-resume:hover {
+  background-color: rgba(230, 168, 23, 0.12);
+}
+
 .workspace-upload-file-preview {
   width: 100%;
   display: flex;
@@ -178,6 +208,11 @@
 .workspace-upload-file-status-fill--aborted {
   width: 100%;
   background-color: #e55353;
+}
+
+.workspace-upload-file-status-fill--interrupted {
+  width: 50%;
+  background-color: #e6a817;
 }
 
 .workspace-upload-file-name {

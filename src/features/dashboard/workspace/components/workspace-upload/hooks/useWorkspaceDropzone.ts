@@ -8,10 +8,12 @@ export function useWorkspaceDropzone() {
   const upsertCurrentFile = useUploadStore((state) => state.upsertCurrentFile);
   const updateCurrentFileStatus = useUploadStore((state) => state.updateCurrentFileStatus);
   const removeCurrentFile = useUploadStore((state) => state.removeCurrentFile);
+  const setFileRef = useUploadStore((state) => state.setFileRef);
+  const removeFileRef = useUploadStore((state) => state.removeFileRef);
 
   const actions: StoreActions = useMemo(
-    () => ({ upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile }),
-    [upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile],
+    () => ({ upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile, setFileRef, removeFileRef }),
+    [upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile, setFileRef, removeFileRef],
   );
 
   const onDrop = useCallback(

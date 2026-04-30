@@ -45,6 +45,8 @@ export async function uploadLargeFile(p: Provisional, actions: StoreActions): Pr
       s3UploadId,
       fileTransferId,
       uploadedParts,
+      filename: p.file.name,
+      sizeBytes: p.file.size,
     });
   }
 
@@ -80,6 +82,8 @@ export async function uploadLargeFile(p: Provisional, actions: StoreActions): Pr
       s3UploadId,
       fileTransferId,
       uploadedParts,
+      filename: p.file.name,
+      sizeBytes: p.file.size,
     });
   }
 

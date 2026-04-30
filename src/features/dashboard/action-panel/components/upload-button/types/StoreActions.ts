@@ -5,4 +5,6 @@ export interface StoreActions {
   upsertCurrentFile: (file: FileTransferResponse) => void;
   updateCurrentFileStatus: (id: string, status: TransferStatus) => void;
   removeCurrentFile: (id: string) => void;
+  setFileRef: (id: string, file: File) => void;
+  removeFileRef: (id: string) => void;
 }

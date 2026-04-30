@@ -1,6 +1,7 @@
-import { File, X } from 'lucide-react';
-import { useState } from 'react';
+import { File, RotateCcw, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { Tooltip } from '../../../../../ui/Tooltip';
+import { TransferStatus } from '../../../models/transfer-status.enum';
 import { getStatusClass } from './utils/getStatusClass';
 import { useWorkspaceDropzone } from './hooks/useWorkspaceDropzone';
 import { useWorkspaceUpload } from './hooks/useWorkspaceUpload';
@@ -9,7 +10,8 @@ import type { FileTransferResponse } from '../../../models/FileTransferResponse'
 import './WorkspaceUpload.css';
 
 export function WorkspaceUpload() {
-  const { visibleTransfers, loading, deletingTransferId, handleDeleteTransfer } =
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+  const { visibleTransfers, loading, deletingTransferId, handleDeleteTransfer, handleResumeUpload, handleResumeFileChange } =
     useWorkspaceUpload();
   const { getRootProps, getInputProps, isDragActive } = useWorkspaceDropzone();
   const [selectedTransfer, setSelectedTransfer] = useState<FileTransferResponse | null>(null);
@@ -21,6 +23,12 @@ export function WorkspaceUpload() {
       })}
     >
       <input {...getInputProps()} />
+      <input
+        ref={resumeInputRef}
+        type="file"
+        hidden
+        onChange={handleResumeFileChange}
+      />
       <span className="workspace-upload-title" aria-hidden="true">UPLOAD</span>
       {isDragActive ? (
         <div className="workspace-upload-drag-overlay" aria-hidden="true">
@@ -33,7 +41,8 @@ export function WorkspaceUpload() {
         <div className="workspace-upload-list">
           {visibleTransfers.map((transfer) => {
             const statusClass = getStatusClass(transfer.status);
-            const canDelete = !transfer.id.startsWith('local-');
+            const isInterrupted = transfer.status === TransferStatus.INTERRUPTED;
+            const canDelete = !transfer.id.startsWith('local-') && !transfer.id.startsWith('interrupted-');
             const isDeleting = deletingTransferId === transfer.id;
 
             return (
@@ -45,7 +54,16 @@ export function WorkspaceUpload() {
                 {isDeleting ? (
                   <div className="workspace-upload-file-deleting-overlay" aria-hidden="true" />
                 ) : null}
-                {canDelete ? (
+                {isInterrupted ? (
+                  <button
+                    className="workspace-upload-file-resume"
+                    type="button"
+                    aria-label="Resume upload"
+                    onClick={(e) => { e.stopPropagation(); handleResumeUpload(transfer, resumeInputRef); }}
+                  >
+                    <RotateCcw size={14} strokeWidth={2.5} />
+                  </button>
+                ) : canDelete ? (
                   <button
                     className="workspace-upload-file-cancel"
                     type="button"

@@ -3,6 +3,7 @@ export const TransferStatus = {
   PENDING: 'pending',
   AVAILABLE: 'available',
   ABORTED: 'aborted',
+  INTERRUPTED: 'interrupted',
 } as const;
 
 export type TransferStatus = (typeof TransferStatus)[keyof typeof TransferStatus];

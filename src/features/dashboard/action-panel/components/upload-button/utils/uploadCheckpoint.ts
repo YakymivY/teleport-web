@@ -35,6 +35,8 @@ function isUploadCheckpoint(value: unknown): value is UploadCheckpoint {
   return (
     typeof candidate.s3UploadId === 'string' &&
     typeof candidate.fileTransferId === 'string' &&
-    Array.isArray(candidate.uploadedParts)
+    Array.isArray(candidate.uploadedParts) &&
+    typeof candidate.filename === 'string' &&
+    typeof candidate.sizeBytes === 'number'
   );
 }

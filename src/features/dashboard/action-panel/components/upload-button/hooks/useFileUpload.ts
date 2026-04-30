@@ -7,8 +7,10 @@ export function useFileUpload() {
   const upsertCurrentFile = useUploadStore((state) => state.upsertCurrentFile);
   const updateCurrentFileStatus = useUploadStore((state) => state.updateCurrentFileStatus);
   const removeCurrentFile = useUploadStore((state) => state.removeCurrentFile);
+  const setFileRef = useUploadStore((state) => state.setFileRef);
+  const removeFileRef = useUploadStore((state) => state.removeFileRef);
 
-  const actions: StoreActions = { upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile };
+  const actions: StoreActions = { upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile, setFileRef, removeFileRef };
 
   const handleUploadChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files ? Array.from(event.target.files) : [];
