@@ -18,7 +18,9 @@ import {
 declare global {
   interface Window {
     electronDownload?: {
-      download: (params: { url: string; headers: Record<string, string>; filename: string }) => Promise<{ status: number }>;
+      download: (params: { url: string; headers: Record<string, string>; filename: string; fileTransferId: string }) => Promise<{ status: number; wasRangeRequest: boolean }>;
+      removePartialFile: (fileTransferId: string) => Promise<void>;
+      onProgress: (callback: (data: { fileTransferId: string; downloadedBytes: number; totalBytes: number }) => void) => () => void;
     };
   }
 }
@@ -63,6 +65,14 @@ export async function removeIosPartialFile(fileTransferId: string): Promise<void
       path: `${PARTIAL_DOWNLOADS_DIR}/${fileTransferId}`,
       directory: Directory.Cache,
     });
+  } catch {
+    // file may not exist — safe to ignore
+  }
+}
+
+export async function removeElectronPartialFile(fileTransferId: string): Promise<void> {
+  try {
+    await window.electronDownload?.removePartialFile(fileTransferId);
   } catch {
     // file may not exist — safe to ignore
   }
@@ -529,18 +539,62 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
 
   // ── Electron ────────────────────────────────────────────────────────────────
   if (window.electronDownload) {
-    const result = await window.electronDownload.download({
-      url: url.toString(),
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    const checkpointKey = `${CHECKPOINT_KEY_PREFIX}${fileTransferId}`;
+
+    // save an initial checkpoint so the interrupted indicator appears on restart
+    saveDownloadCheckpoint(checkpointKey, {
+      fileTransferId,
       filename,
+      sizeBytes: fallbackTotalBytes ?? 0,
+      downloadedBytes: 0,
     });
-    if (result.status === 404) return false;
-    if (result.status === 401) handleUnauthorized();
-    if (result.status < 200 || result.status >= 300) {
-      throw new Error('Failed to start download.');
+
+    // listen to progress events emitted by the main process during streaming
+    const removeProgressListener = window.electronDownload.onProgress((data) => {
+      if (data.fileTransferId !== fileTransferId) return;
+
+      saveDownloadCheckpoint(checkpointKey, {
+        fileTransferId,
+        filename,
+        sizeBytes: data.totalBytes,
+        downloadedBytes: data.downloadedBytes,
+      });
+
+      if (onProgress && data.totalBytes > 0) {
+        onProgress(Math.min(100, Math.floor((data.downloadedBytes / data.totalBytes) * 100)));
+      }
+    });
+
+    try {
+      const result = await window.electronDownload.download({
+        url: url.toString(),
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        filename,
+        fileTransferId,
+      });
+
+      if (result.status === 404) return false;
+      if (result.status === 401) handleUnauthorized();
+      if (result.status < 200 || result.status >= 300) {
+        throw new Error('Failed to start download.');
+      }
+
+      removeDownloadCheckpoint(checkpointKey);
+      if (onProgress) onProgress(100);
+
+      if (result.wasRangeRequest) {
+        try {
+          await markDownloadComplete(fileTransferId);
+        } catch (err: unknown) {
+          const httpStatus = (err as { response?: { status?: number } }).response?.status;
+          if (httpStatus !== 409) throw err;
+        }
+      }
+
+      return true;
+    } finally {
+      removeProgressListener();
     }
-    if (onProgress) onProgress(100);
-    return true;
   }
 
   // ── Capacitor iOS (resumable via fetch + Filesystem) ────────────────────────

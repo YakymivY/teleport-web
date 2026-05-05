@@ -72,6 +72,8 @@ import { ipcMain, net } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const PARTIAL_DOWNLOADS_DIR = 'partial_downloads';
+const COMMIT_INTERVAL_BYTES = 5 * 1024 * 1024;
 
 ipcMain.handle('electron-s3-put', (_event, { url, method = 'PUT', headers, buffer }: { url: string; method?: string; headers: Record<string, string>; buffer: ArrayBuffer }) => {
   return new Promise<{ status: number; etag: string | null }>((resolve, reject) => {
@@ -103,25 +105,101 @@ function uniqueDownloadPath(dir: string, filename: string): string {
   return candidate;
 }
 
-ipcMain.handle('electron-download', (_event, { url, headers, filename }: { url: string; headers: Record<string, string>; filename: string }) => {
-  return new Promise<{ status: number }>((resolve, reject) => {
+ipcMain.handle('electron-download', (event, { url, headers, filename, fileTransferId }: { url: string; headers: Record<string, string>; filename: string; fileTransferId: string }) => {
+  return new Promise<{ status: number; wasRangeRequest: boolean }>((resolve, reject) => {
+    const partialDir = path.join(app.getPath('userData'), PARTIAL_DOWNLOADS_DIR);
+    fs.mkdirSync(partialDir, { recursive: true });
+    const partialPath = path.join(partialDir, fileTransferId);
+
+    let resumeFrom = 0;
+    try {
+      resumeFrom = fs.statSync(partialPath).size;
+    } catch { /* start from byte 0 */ }
+
+    // add the Range header if the resumeFrom is greater than 0
+    const requestHeaders: Record<string, string> = { ...headers };
+    if (resumeFrom > 0) {
+      requestHeaders['Range'] = `bytes=${resumeFrom}-`;
+    }
+
+    // create the request
     const req = net.request({ method: 'GET', url });
-    for (const [k, v] of Object.entries(headers)) {
+    for (const [k, v] of Object.entries(requestHeaders)) {
       req.setHeader(k, v);
     }
+
+    // handle the response
     req.on('response', (res) => {
-      if (res.statusCode !== 200) {
+      if (res.statusCode !== 200 && res.statusCode !== 206) {
         res.on('data', () => {});
-        res.on('end', () => resolve({ status: res.statusCode }));
+        res.on('end', () => resolve({ status: res.statusCode, wasRangeRequest: false }));
         return;
       }
-      const downloadPath = uniqueDownloadPath(app.getPath('downloads'), filename);
-      const fileStream = fs.createWriteStream(downloadPath);
-      res.on('data', (chunk: Buffer) => fileStream.write(chunk));
-      res.on('end', () => fileStream.end(() => resolve({ status: res.statusCode })));
+
+      const wasRangeRequest = res.statusCode === 206;
+
+      // get the content length from the response headers
+      const contentLengthRaw = res.headers['content-length'];
+      const contentLengthStr = Array.isArray(contentLengthRaw) ? contentLengthRaw[0] : contentLengthRaw;
+      const contentLength = contentLengthStr ? Number(contentLengthStr) : undefined;
+      const totalBytes =
+        Number.isFinite(contentLength) && (contentLength ?? 0) > 0
+          ? resumeFrom + (contentLength ?? 0)
+          : 0;
+
+      // emit initial progress so the renderer can save the checkpoint immediately
+      event.sender.send('electron-download-progress', {
+        fileTransferId,
+        downloadedBytes: resumeFrom,
+        totalBytes,
+      });
+
+      // create the file stream
+      const fileStream = fs.createWriteStream(partialPath, { flags: resumeFrom > 0 ? 'a' : 'w' });
+      let writtenInThisSession = 0;
+      let lastCommittedBytes = resumeFrom;
+
+      res.on('data', (chunk: Buffer) => {
+        // write the chunk to the file stream
+        fileStream.write(chunk);
+        writtenInThisSession += chunk.byteLength;
+
+        // update the progress
+        const totalWritten = resumeFrom + writtenInThisSession;
+        if (totalWritten - lastCommittedBytes >= COMMIT_INTERVAL_BYTES) {
+          lastCommittedBytes = totalWritten;
+          event.sender.send('electron-download-progress', {
+            fileTransferId,
+            downloadedBytes: totalWritten,
+            totalBytes,
+          });
+        }
+      });
+
+      // handle the end of the response
+      res.on('end', () => {
+        const totalWritten = resumeFrom + writtenInThisSession;
+        fileStream.end(() => {
+          // copy the partial file to the downloads directory
+          const downloadPath = uniqueDownloadPath(app.getPath('downloads'), filename);
+          fs.copyFile(partialPath, downloadPath, (copyErr) => {
+            if (copyErr) { reject(copyErr); return; }
+            fs.unlink(partialPath, () => {});
+            resolve({ status: res.statusCode, wasRangeRequest });
+          });
+        });
+      });
+
       res.on('error', (err) => { fileStream.destroy(); reject(err); });
     });
+
     req.on('error', reject);
     req.end();
   });
+});
+
+ipcMain.handle('electron-download-remove-partial', (_event, fileTransferId: string) => {
+  // remove the partial file
+  const partialPath = path.join(app.getPath('userData'), PARTIAL_DOWNLOADS_DIR, fileTransferId);
+  try { fs.unlinkSync(partialPath); } catch { /* file may not exist — safe to ignore */ }
 });
