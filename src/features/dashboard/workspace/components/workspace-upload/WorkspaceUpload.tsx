@@ -1,5 +1,6 @@
 import { File, RotateCcw, X } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Tooltip } from '../../../../../ui/Tooltip';
 import { TransferStatus } from '../../../models/transfer-status.enum';
 import { getStatusClass } from './utils/getStatusClass';
@@ -8,6 +9,8 @@ import { useWorkspaceUpload } from './hooks/useWorkspaceUpload';
 import { WorkspaceUploadFileDetailModal } from './WorkspaceUploadFileDetailModal';
 import type { FileTransferResponse } from '../../../models/FileTransferResponse';
 import './WorkspaceUpload.css';
+
+const isNativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 
 export function WorkspaceUpload() {
   const resumeInputRef = useRef<HTMLInputElement>(null);
@@ -18,11 +21,11 @@ export function WorkspaceUpload() {
 
   return (
     <section
-      {...getRootProps({
-        className: 'workspace-section workspace-section--upload',
-      })}
+      {...(!isNativeAndroid
+        ? getRootProps({ className: 'workspace-section workspace-section--upload' })
+        : { className: 'workspace-section workspace-section--upload' })}
     >
-      <input {...getInputProps()} />
+      {!isNativeAndroid && <input {...getInputProps()} />}
       <input
         ref={resumeInputRef}
         type="file"

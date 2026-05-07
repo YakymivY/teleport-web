@@ -47,7 +47,7 @@ export async function processUploads(files: File[], actions: StoreActions): Prom
       try {
         await uploadLargeFile(p, actions);
         removeFileRef(p.provisional.id);
-      } catch {
+      } catch (err) {
         updateCurrentFileStatus(p.provisional.id, TransferStatus.INTERRUPTED);
         toast.error('Upload interrupted. You can resume it later.');
       }

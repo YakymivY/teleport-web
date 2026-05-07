@@ -1,9 +1,12 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { FileTransfer } from '@capacitor/file-transfer';
-import type { FileTransferError } from '@capacitor/file-transfer';
 import { Media } from '@capacitor-community/media';
-import { apiClient } from '../../../../../../api/apiClient';
+
+interface MediaScanPlugin {
+  scanFile(options: { path: string }): Promise<void>;
+}
+const MediaScan = registerPlugin<MediaScanPlugin>('MediaScan');
+import { apiClient, getApiBaseUrl } from '../../../../../../api/apiClient';
 import type { FileTransferResponse } from '../../../../models/FileTransferResponse.ts';
 import type { DeleteFileRequest } from '../types/DeleteFileRequest.ts';
 import type { DownloadFileTransferParams } from '../types/DownloadFileTransferParams';
@@ -59,7 +62,7 @@ export async function removeOPFSEntry(fileTransferId: string): Promise<void> {
   }
 }
 
-export async function removeIosPartialFile(fileTransferId: string): Promise<void> {
+export async function removeCapacitorPartialFile(fileTransferId: string): Promise<void> {
   try {
     await Filesystem.deleteFile({
       path: `${PARTIAL_DOWNLOADS_DIR}/${fileTransferId}`,
@@ -69,6 +72,9 @@ export async function removeIosPartialFile(fileTransferId: string): Promise<void
     // file may not exist — safe to ignore
   }
 }
+
+/** @deprecated use removeCapacitorPartialFile */
+export const removeIosPartialFile = removeCapacitorPartialFile;
 
 export async function removeElectronPartialFile(fileTransferId: string): Promise<void> {
   try {
@@ -213,54 +219,38 @@ async function streamToFilesystemWithPeriodicCommits(params: {
   }
 }
 
-async function downloadFileNative(params: {
-  url: string;
-  token: string | null;
-  filename: string;
-  onProgress?: (percent: number) => void;
-}): Promise<boolean> {
-  const { url, token, filename, onProgress } = params;
 
-  const mediaType = getMediaType(filename);
-  const directory = mediaType ? Directory.Cache : Directory.Documents;
-  const { uri } = await Filesystem.getUri({ path: filename, directory });
+// On Android, @capacitor-community/media saves to Android/media/<appId>/ which Google
+// Photos does not watch, and its scanPhoto() uses a deprecated broadcast ignored on
+// API 29+.
+//
+// Copy directly to the standard public Movies/ or Pictures/ folder on external
+// storage, then notify MediaStore via MediaScanPlugin (MediaScannerConnection.scanFile)
+// so Google Photos sees the file immediately.
+async function saveAndroidMediaToGallery(
+  partialPath: string,
+  filename: string,
+  mediaType: 'image' | 'video',
+): Promise<void> {
+  const subDir = mediaType === 'video' ? 'Movies' : 'Pictures';
+  const destPath = `${subDir}/${filename}`;
 
-  const listenerHandle = onProgress
-    ? await FileTransfer.addListener('progress', (status) => {
-        if (status.url === url && status.type === 'download' && status.lengthComputable && status.contentLength > 0) {
-          onProgress(Math.floor((status.bytes / status.contentLength) * 100));
-        }
-      })
-    : null;
+  await Filesystem.mkdir({ path: subDir, directory: Directory.ExternalStorage, recursive: true }).catch(() => {});
+  await Filesystem.deleteFile({ path: destPath, directory: Directory.ExternalStorage }).catch(() => {});
 
-  try {
-    await FileTransfer.downloadFile({
-      url,
-      path: uri,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      progress: !!onProgress,
-    });
+  await Filesystem.copy({
+    from: partialPath,
+    directory: Directory.Cache,
+    to: destPath,
+    toDirectory: Directory.ExternalStorage,
+  });
 
-    if (onProgress) onProgress(100);
-
-    if (mediaType === 'image') {
-      await Media.savePhoto({ path: uri });
-    } else if (mediaType === 'video') {
-      await Media.saveVideo({ path: uri });
-    }
-
-    return true;
-  } catch (err: unknown) {
-    const ftError = (err as { data?: FileTransferError }).data;
-    if (ftError?.httpStatus === 404) return false;
-    if (ftError?.httpStatus === 401) handleUnauthorized();
-    throw err;
-  } finally {
-    if (mediaType) {
-      try { await Filesystem.deleteFile({ path: filename, directory: Directory.Cache }); } catch { /* ignore */ }
-    }
-    await listenerHandle?.remove();
-  }
+  // notify MediaStore so Google Photos sees the file immediately.
+  // Filesystem.getUri returns a URL-encoded URI (e.g. spaces become %20); decode it
+  // back to a plain filesystem path before passing to MediaScannerConnection, which
+  // expects a real path and would silently skip files with %20 in the name.
+  const { uri: destUri } = await Filesystem.getUri({ path: destPath, directory: Directory.ExternalStorage });
+  await MediaScan.scanFile({ path: decodeURIComponent(destUri) });
 }
 
 // iOS FileManager.copyItem throws NSFileWriteFileExistsError if the destination already exists.
@@ -275,8 +265,8 @@ async function copyToDocuments(fromPartialPath: string, toFilename: string): Pro
   });
 }
 
-// download a file from the backend to the iOS filesystem
-async function downloadFileIos(params: {
+// download a file from the backend to the native filesystem (iOS and Android)
+async function downloadFileCapacitorNative(params: {
   url: URL;
   token: string | null;
   fileTransferId: string;
@@ -319,7 +309,24 @@ async function downloadFileIos(params: {
       requestHeaders['Range'] = `bytes=${resumeFrom}-`;
     }
 
-    const response = await fetch(url, { method: 'GET', headers: requestHeaders });
+    let response: Response;
+    try {
+      response = await fetch(url, { method: 'GET', headers: requestHeaders });
+    } catch (fetchErr) {
+      // The Range header is not CORS-safe and triggers a preflight OPTIONS request.
+      // If the server's Access-Control-Allow-Headers does not include Range, the
+      // preflight fails and fetch throws TypeError. Fall back to a full re-download
+      // from byte 0 so the download still completes (losing resume progress).
+      // The permanent fix is to add Range to Access-Control-Allow-Headers on the backend.
+      if (resumeFrom > 0) {
+        await Filesystem.deleteFile({ path: partialPath, directory: Directory.Cache }).catch(() => {});
+        delete requestHeaders['Range'];
+        resumeFrom = 0;
+        response = await fetch(url, { method: 'GET', headers: requestHeaders });
+      } else {
+        throw fetchErr;
+      }
+    }
 
     // handle the response
     if (response.status === 404) return false;
@@ -384,18 +391,26 @@ async function downloadFileIos(params: {
   const { uri: partialUri } = await Filesystem.getUri({ path: partialPath, directory: Directory.Cache });
 
   // save the file to the media library
-  if (mediaType === 'image') {
+  if (Capacitor.getPlatform() === 'android' && mediaType) {
+    // Android: copy to standard Movies/ or Pictures/ on external storage, then notify
+    // MediaStore via MediaScannerConnection so Google Photos sees the file immediately
+    try {
+      await saveAndroidMediaToGallery(partialPath, filename, mediaType);
+    } catch {
+      await copyToDocuments(partialPath, filename);
+    }
+  } else if (mediaType === 'image') {
+    // iOS
     try {
       await Media.savePhoto({ path: partialUri });
     } catch {
-      // photos save can fail on the simulator or for unsupported formats — fall back to Documents
       await copyToDocuments(partialPath, filename);
     }
   } else if (mediaType === 'video') {
+    // iOS
     try {
       await Media.saveVideo({ path: partialUri });
     } catch {
-      // photos save can fail on the simulator or for unsupported formats — fall back to Documents
       await copyToDocuments(partialPath, filename);
     }
   } else {
@@ -530,7 +545,7 @@ async function downloadFileWeb(params: {
 export async function downloadFileTransfer(params: DownloadFileTransferParams): Promise<boolean> {
   const { fileTransferId, fallbackFilename, fallbackTotalBytes, onProgress } = params;
   const token = localStorage.getItem('token');
-  const url = new URL('/files/download', import.meta.env.VITE_API_URL);
+  const url = new URL('/files/download', getApiBaseUrl());
   url.searchParams.set('fileTransferId', fileTransferId);
 
   if (onProgress) onProgress(0);
@@ -597,14 +612,9 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
     }
   }
 
-  // ── Capacitor iOS (resumable via fetch + Filesystem) ────────────────────────
-  if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
-    return downloadFileIos({ url, token, fileTransferId, filename, fallbackTotalBytes, onProgress });
-  }
-
-  // ── Capacitor Android (single-shot via FileTransfer plugin) ─────────────────
+  // ── Capacitor iOS / Android (resumable via fetch + Filesystem) ─────────────
   if (Capacitor.isNativePlatform()) {
-    return downloadFileNative({ url: url.toString(), token, filename, onProgress });
+    return downloadFileCapacitorNative({ url, token, fileTransferId, filename, fallbackTotalBytes, onProgress });
   }
 
   // ── Web browser (OPFS + native download trigger) ─────────────────────────────

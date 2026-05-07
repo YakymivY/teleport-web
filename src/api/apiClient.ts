@@ -1,8 +1,22 @@
 import axios, { type AxiosError } from 'axios';
 import toast from 'react-hot-toast';
 
+// In dev, VITE_API_URL contains "localhost" which resolves to the machine running
+// the code — correct in a browser, wrong inside the Android emulator where
+// "localhost" means the emulator itself.  Swap it for the actual hostname the
+// page was loaded from so the emulator (10.0.2.2) and physical devices (LAN IP)
+// can reach the backend running on the dev machine.
+export function getApiBaseUrl(): string {
+  const configured: string = import.meta.env.VITE_API_URL ?? '';
+  const pageHost = window.location.hostname;
+  if (pageHost !== 'localhost' && configured.includes('localhost')) {
+    return configured.replace('localhost', pageHost);
+  }
+  return configured;
+}
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: getApiBaseUrl(),
 });
 
 let isHandling401 = false;

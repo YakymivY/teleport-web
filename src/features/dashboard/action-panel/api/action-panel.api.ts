@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { apiClient } from '../../../../api/apiClient';
 import type { CompleteMultipartUploadParams } from '../types/CompleteMultipartUploadParams.ts';
 import type { GetMultipartPartUrlParams } from '../types/GetMultipartPartUrlParams.ts';
@@ -115,11 +116,13 @@ export async function uploadChunkToPresignedUrl(
     return result.etag;
   }
 
-  const response = await fetch(url, {
-    method: method || 'PUT',
-    headers,
-    body: chunk,
-  });
+  // Capacitor's native-bridge convertBody does not handle Blob (falls back to JSON.stringify → "{}").
+  // Uint8Array is correctly handled as raw binary. Convert on native to avoid corrupt uploads.
+  const fetchBody: Blob | Uint8Array = Capacitor.isNativePlatform()
+    ? new Uint8Array(await chunk.arrayBuffer())
+    : chunk;
+
+  const response = await fetch(url, { method: method || 'PUT', headers, body: fetchBody });
 
   if (!response.ok) {
     throw new Error('UPLOAD_FAILED');

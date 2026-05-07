@@ -7,7 +7,7 @@ import {
   deleteFileTransfer,
   downloadFileTransfer,
   removeOPFSEntry,
-  removeIosPartialFile,
+  removeCapacitorPartialFile,
   removeElectronPartialFile,
 } from '../api/workspace-download.api';
 import { useDownloadStore } from '../../../../../../store/download/useDownloadStore';
@@ -171,7 +171,7 @@ export function useWorkspaceDownload() {
         removeCurrentFile(transfer.id);
         removeDownloadCheckpoint(`${CHECKPOINT_KEY_PREFIX}${fileTransferId}`);
         await removeOPFSEntry(fileTransferId);
-        await removeIosPartialFile(fileTransferId);
+        await removeCapacitorPartialFile(fileTransferId);
         await removeElectronPartialFile(fileTransferId);
       } catch {
         toast.error('Failed to delete file transfer.');
