@@ -6,6 +6,7 @@ interface UploadStoreState {
   currentFiles: FileTransferResponse[];
   fileRefs: Record<string, File>;
   fileProgress: Record<string, number>;
+  uploadControllers: Record<string, AbortController>;
   upsertCurrentFile: (file: FileTransferResponse) => void;
   updateCurrentFileStatus: (id: string, status: TransferStatus) => void;
   removeCurrentFile: (id: string) => void;
@@ -13,12 +14,15 @@ interface UploadStoreState {
   removeFileRef: (id: string) => void;
   setFileProgress: (id: string, pct: number) => void;
   removeFileProgress: (id: string) => void;
+  setUploadController: (id: string, controller: AbortController) => void;
+  removeUploadController: (id: string) => void;
 }
 
 export const useUploadStore = create<UploadStoreState>((set) => ({
   currentFiles: [],
   fileRefs: {},
   fileProgress: {},
+  uploadControllers: {},
   upsertCurrentFile: (file) =>
     set((state) => ({
       currentFiles: [file, ...state.currentFiles.filter((f) => f.id !== file.id)],
@@ -46,5 +50,12 @@ export const useUploadStore = create<UploadStoreState>((set) => ({
     set((state) => {
       const { [id]: _, ...rest } = state.fileProgress;
       return { fileProgress: rest };
+    }),
+  setUploadController: (id, controller) =>
+    set((state) => ({ uploadControllers: { ...state.uploadControllers, [id]: controller } })),
+  removeUploadController: (id) =>
+    set((state) => {
+      const { [id]: _, ...rest } = state.uploadControllers;
+      return { uploadControllers: rest };
     }),
 }));

@@ -7,9 +7,11 @@ import { createProvisionalTransfer } from './createProvisionalTransfer';
 import { uploadLargeFile } from './uploadLargeFile';
 import { uploadSmallBatch } from './uploadSmallBatch';
 import { useUploadStore } from '../../../../../../store/upload/useUploadStore';
+import { abortMultipartUpload } from '../../../api/action-panel.api';
+import { getUploadCheckpoint, removeUploadCheckpoint } from './uploadCheckpoint';
 
 export async function processUploads(files: File[], actions: StoreActions): Promise<void> {
-  const { upsertCurrentFile, updateCurrentFileStatus, setFileRef, removeFileRef } = actions;
+  const { upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile, setFileRef, removeFileRef } = actions;
 
   if (files.length === 0) {
     toast.error('No file selected.');
@@ -42,25 +44,42 @@ export async function processUploads(files: File[], actions: StoreActions): Prom
       await uploadSmallBatch(small, actions);
     }
 
-    const { setFileProgress, removeFileProgress } = useUploadStore.getState();
+    const { setFileProgress, removeFileProgress, setUploadController, removeUploadController } = useUploadStore.getState();
 
+    let wasCancelled = false;
     for (const p of large) {
+      const controller = new AbortController();
+      setUploadController(p.provisional.id, controller);
       setFileRef(p.provisional.id, p.file);
       setFileProgress(p.provisional.id, 0);
       try {
-        await uploadLargeFile(p, actions, (pct) => setFileProgress(p.provisional.id, pct));
+        await uploadLargeFile(p, actions, (pct) => setFileProgress(p.provisional.id, pct), controller.signal);
         removeFileRef(p.provisional.id);
       } catch (err) {
-        updateCurrentFileStatus(p.provisional.id, TransferStatus.INTERRUPTED);
-        toast.error('Upload interrupted. You can resume it later.');
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          wasCancelled = true;
+          const uploadKey = `upload_${p.file.size}_${p.file.name}`;
+          const checkpoint = getUploadCheckpoint(uploadKey);
+          if (checkpoint) {
+            removeUploadCheckpoint(uploadKey);
+            void abortMultipartUpload({ fileTransferId: checkpoint.fileTransferId, s3UploadId: checkpoint.s3UploadId });
+          }
+          removeCurrentFile(p.provisional.id);
+        } else {
+          updateCurrentFileStatus(p.provisional.id, TransferStatus.INTERRUPTED);
+          toast.error('Upload interrupted. You can resume it later.');
+        }
       } finally {
+        removeUploadController(p.provisional.id);
         removeFileProgress(p.provisional.id);
       }
     }
 
-    toast.success('Upload finished.');
+    if (!wasCancelled) toast.success('Upload finished.');
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : 'Failed to upload file.');
+    if (!(error instanceof DOMException && error.name === 'AbortError')) {
+      toast.error(error instanceof Error ? error.message : 'Failed to upload file.');
+    }
   }
 }
 

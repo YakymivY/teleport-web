@@ -1,10 +1,11 @@
 import { TransferStatus } from '../../../../models/transfer-status.enum';
-import { requestUploadSingle, uploadFileToPresignedUrl, confirmUpload } from '../../../api/action-panel.api';
+import { requestUploadSingle, uploadFileToPresignedUrl, confirmUpload, cancelSingleUpload } from '../../../api/action-panel.api';
 import type { Provisional } from '../types/Provisional';
 import type { StoreActions } from '../types/StoreActions';
 import { handlePresignUploadError } from './handlePresignUploadError';
+import { useUploadStore } from '../../../../../../store/upload/useUploadStore';
 
-export async function uploadSmallBatch(small: Provisional[], actions: StoreActions): Promise<void> {
+export async function uploadSmallBatch(small: Provisional[], actions: StoreActions, signal?: AbortSignal): Promise<void> {
   const { upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile } = actions;
 
   for (const p of small) updateCurrentFileStatus(p.provisional.id, TransferStatus.PENDING);
@@ -21,25 +22,39 @@ export async function uploadSmallBatch(small: Provisional[], actions: StoreActio
     throw new Error('UPLOAD_INIT_FAILED');
   }
 
+  const { setUploadController, removeUploadController } = useUploadStore.getState();
+
   const batch = small.map((p, idx) => {
     const presign = presigned[idx];
     removeCurrentFile(p.provisional.id);
     upsertCurrentFile({ ...p.provisional, id: presign.id, status: TransferStatus.PENDING });
+    setUploadController(presign.id, new AbortController());
     return { file: p.file, transferId: presign.id, url: presign.url, headers: presign.headers };
   });
 
   let uploaded: Array<{ id: string; etag: string }> = [];
   try {
+    if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError');
+
     uploaded = await Promise.all(
       batch.map(async (b) => {
-        const etag = await uploadFileToPresignedUrl(b.url, b.headers, b.file);
+        const etag = await uploadFileToPresignedUrl(b.url, b.headers, b.file, signal);
         return { id: b.transferId, etag };
       }),
     );
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      for (const b of batch) {
+        removeCurrentFile(b.transferId);
+        void cancelSingleUpload({ fileTransferId: b.transferId });
+      }
+      throw error;
+    }
     for (const b of batch) updateCurrentFileStatus(b.transferId, TransferStatus.ABORTED);
     handlePresignUploadError(error);
     throw error;
+  } finally {
+    for (const b of batch) removeUploadController(b.transferId);
   }
 
   try {

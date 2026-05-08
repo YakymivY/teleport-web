@@ -6,10 +6,11 @@ import { deleteFileTransfer, fetchSourceFileTransfers } from '../api/workspace-u
 import { useUploadStore } from '../../../../../../store/upload/useUploadStore';
 import { useFileDeletedEvent } from '../../../hooks/useFileDeletedEvent';
 import { getInterruptedCheckpoints } from '../../../../action-panel/components/upload-button/utils/getInterruptedCheckpoints';
-import { removeUploadCheckpoint } from '../../../../action-panel/components/upload-button/utils/uploadCheckpoint';
+import { getUploadCheckpoint, removeUploadCheckpoint } from '../../../../action-panel/components/upload-button/utils/uploadCheckpoint';
 import { uploadLargeFile } from '../../../../action-panel/components/upload-button/utils/uploadLargeFile';
 import { processUploads } from '../../../../action-panel/components/upload-button/utils/processUploads';
 import type { StoreActions } from '../../../../action-panel/components/upload-button/types/StoreActions';
+import { abortMultipartUpload } from '../../../../action-panel/api/action-panel.api';
 
 export function useWorkspaceUpload() {
   const [transfers, setTransfers] = useState<FileTransferResponse[]>([]);
@@ -19,6 +20,7 @@ export function useWorkspaceUpload() {
   const currentFiles = useUploadStore((state) => state.currentFiles);
   const fileRefs = useUploadStore((state) => state.fileRefs);
   const fileProgress = useUploadStore((state) => state.fileProgress);
+  const uploadControllers = useUploadStore((state) => state.uploadControllers);
   const upsertCurrentFile = useUploadStore((state) => state.upsertCurrentFile);
   const updateCurrentFileStatus = useUploadStore((state) => state.updateCurrentFileStatus);
   const removeCurrentFile = useUploadStore((state) => state.removeCurrentFile);
@@ -26,6 +28,8 @@ export function useWorkspaceUpload() {
   const removeFileRef = useUploadStore((state) => state.removeFileRef);
   const setFileProgress = useUploadStore((state) => state.setFileProgress);
   const removeFileProgress = useUploadStore((state) => state.removeFileProgress);
+  const setUploadController = useUploadStore((state) => state.setUploadController);
+  const removeUploadController = useUploadStore((state) => state.removeUploadController);
 
   const actions: StoreActions = useMemo(
     () => ({ upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile, setFileRef, removeFileRef }),
@@ -126,27 +130,45 @@ export function useWorkspaceUpload() {
     }
   }, [currentFiles, removeCurrentFile]);
 
+  const handleCancelUpload = useCallback((transferId: string) => {
+    uploadControllers[transferId]?.abort();
+  }, [uploadControllers]);
+
   const handleResumeUpload = useCallback(
     (transfer: FileTransferResponse, inputRef: RefObject<HTMLInputElement | null>) => {
       const cachedFile = fileRefs[transfer.id];
 
       if (cachedFile) {
         // in-session: File object is still in memory, resume directly
+        const controller = new AbortController();
+        setUploadController(transfer.id, controller);
         updateCurrentFileStatus(transfer.id, TransferStatus.PENDING);
         setFileProgress(transfer.id, 0);
         void uploadLargeFile(
           { file: cachedFile, contentType: cachedFile.type || 'application/octet-stream', provisional: transfer },
           actions,
           (pct) => setFileProgress(transfer.id, pct),
+          controller.signal,
         )
           .then(() => {
             removeFileRef(transfer.id);
           })
-          .catch(() => {
-            updateCurrentFileStatus(transfer.id, TransferStatus.INTERRUPTED);
-            toast.error('Upload interrupted. You can resume it later.');
+          .catch((err) => {
+            if (err instanceof DOMException && err.name === 'AbortError') {
+              const uploadKey = `upload_${cachedFile.size}_${cachedFile.name}`;
+              const checkpoint = getUploadCheckpoint(uploadKey);
+              if (checkpoint) {
+                removeUploadCheckpoint(uploadKey);
+                void abortMultipartUpload({ fileTransferId: checkpoint.fileTransferId, s3UploadId: checkpoint.s3UploadId });
+              }
+              removeCurrentFile(transfer.id);
+            } else {
+              updateCurrentFileStatus(transfer.id, TransferStatus.INTERRUPTED);
+              toast.error('Upload interrupted. You can resume it later.');
+            }
           })
           .finally(() => {
+            removeUploadController(transfer.id);
             removeFileProgress(transfer.id);
           });
       } else {
@@ -155,7 +177,7 @@ export function useWorkspaceUpload() {
         inputRef.current?.click();
       }
     },
-    [fileRefs, actions, updateCurrentFileStatus, removeFileRef, setFileProgress, removeFileProgress],
+    [fileRefs, actions, updateCurrentFileStatus, removeFileRef, setFileProgress, removeFileProgress, setUploadController, removeUploadController],
   );
 
   const handleResumeFileChange = useCallback(
@@ -182,7 +204,9 @@ export function useWorkspaceUpload() {
     loading,
     deletingTransferId,
     fileProgress,
+    uploadControllers,
     handleDeleteTransfer,
+    handleCancelUpload,
     handleResumeUpload,
     handleResumeFileChange,
   };

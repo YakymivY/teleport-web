@@ -14,7 +14,7 @@ const isNativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() 
 
 export function WorkspaceUpload() {
   const resumeInputRef = useRef<HTMLInputElement>(null);
-  const { visibleTransfers, loading, deletingTransferId, fileProgress, handleDeleteTransfer, handleResumeUpload, handleResumeFileChange } =
+  const { visibleTransfers, loading, deletingTransferId, fileProgress, uploadControllers, handleDeleteTransfer, handleCancelUpload, handleResumeUpload, handleResumeFileChange } =
     useWorkspaceUpload();
   const { getRootProps, getInputProps, isDragActive } = useWorkspaceDropzone();
   const [selectedTransfer, setSelectedTransfer] = useState<FileTransferResponse | null>(null);
@@ -45,7 +45,8 @@ export function WorkspaceUpload() {
           {visibleTransfers.map((transfer) => {
             const statusClass = getStatusClass(transfer.status);
             const isInterrupted = transfer.status === TransferStatus.INTERRUPTED;
-            const canDelete = !transfer.id.startsWith('local-') && !transfer.id.startsWith('interrupted-');
+            const isUploading = uploadControllers[transfer.id] != null;
+            const canDelete = !isUploading && !transfer.id.startsWith('local-') && !transfer.id.startsWith('interrupted-');
             const isDeleting = deletingTransferId === transfer.id;
 
             const uploadPct = fileProgress[transfer.id];
@@ -67,6 +68,15 @@ export function WorkspaceUpload() {
                     onClick={(e) => { e.stopPropagation(); handleResumeUpload(transfer, resumeInputRef); }}
                   >
                     <RotateCcw size={14} strokeWidth={2.5} />
+                  </button>
+                ) : isUploading ? (
+                  <button
+                    className="workspace-upload-file-cancel"
+                    type="button"
+                    aria-label="Cancel upload"
+                    onClick={(e) => { e.stopPropagation(); handleCancelUpload(transfer.id); }}
+                  >
+                    <X size={14} strokeWidth={3} />
                   </button>
                 ) : canDelete ? (
                   <button

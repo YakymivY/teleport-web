@@ -66,6 +66,14 @@ export async function confirmUpload(params: ConfirmSingleUploadParams) {
   return response.data;
 }
 
+export async function abortMultipartUpload(body: { fileTransferId: string; s3UploadId: string }): Promise<void> {
+  await apiClient.delete('/files/upload/multipart', { data: body });
+}
+
+export async function cancelSingleUpload(params: { fileTransferId: string }): Promise<void> {
+  await apiClient.delete('/files/upload/single', { params });
+}
+
 declare global {
   interface Window {
     electronS3?: {
@@ -74,9 +82,10 @@ declare global {
   }
 }
 
-export async function uploadFileToPresignedUrl(url: string, headers: Record<string, string>, file: File) {
+export async function uploadFileToPresignedUrl(url: string, headers: Record<string, string>, file: File, signal?: AbortSignal) {
   // specific to electron
   if (window.electronS3) {
+    if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
     const buffer = await file.arrayBuffer();
     const result = await window.electronS3.put({ url, headers, buffer });
     if (result.status < 200 || result.status >= 300) throw new Error('UPLOAD_FAILED');
@@ -88,6 +97,7 @@ export async function uploadFileToPresignedUrl(url: string, headers: Record<stri
     method: 'PUT',
     headers,
     body: file,
+    signal,
   });
 
   if (!response.ok) {
@@ -107,8 +117,10 @@ export async function uploadChunkToPresignedUrl(
   method: string,
   headers: Record<string, string> | undefined,
   chunk: Blob,
+  signal?: AbortSignal,
 ) {
   if (window.electronS3) {
+    if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
     const buffer = await chunk.arrayBuffer();
     const result = await window.electronS3.put({ url, method: method || 'PUT', headers: headers ?? {}, buffer });
     if (result.status < 200 || result.status >= 300) throw new Error('UPLOAD_FAILED');
@@ -122,7 +134,7 @@ export async function uploadChunkToPresignedUrl(
     ? new Uint8Array(await chunk.arrayBuffer())
     : chunk;
 
-  const response = await fetch(url, { method: method || 'PUT', headers, body: fetchBody });
+  const response = await fetch(url, { method: method || 'PUT', headers, body: fetchBody, signal });
 
   if (!response.ok) {
     throw new Error('UPLOAD_FAILED');

@@ -13,7 +13,7 @@ import type { StoreActions } from '../types/StoreActions';
 import { handlePresignUploadError } from './handlePresignUploadError';
 import { getUploadCheckpoint, removeUploadCheckpoint, saveUploadCheckpoint } from './uploadCheckpoint';
 
-export async function uploadLargeFile(p: Provisional, actions: StoreActions, onProgress?: (pct: number) => void): Promise<void> {
+export async function uploadLargeFile(p: Provisional, actions: StoreActions, onProgress?: (pct: number) => void, signal?: AbortSignal): Promise<void> {
   const { upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile } = actions;
 
   // mark file as actively uploading
@@ -52,6 +52,8 @@ export async function uploadLargeFile(p: Provisional, actions: StoreActions, onP
 
   // upload only missing parts, skipping those already confirmed
   for (let partNumber = 1; partNumber <= totalParts; partNumber += 1) {
+    if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError');
+
     if (uploadedPartNumbers.has(partNumber)) {
       continue;
     }
@@ -68,9 +70,11 @@ export async function uploadLargeFile(p: Provisional, actions: StoreActions, onP
 
     let etag = '';
     try {
-      etag = await uploadChunkToPresignedUrl(url, method ?? 'PUT', headers, chunk);
+      etag = await uploadChunkToPresignedUrl(url, method ?? 'PUT', headers, chunk, signal);
     } catch (error) {
-      handlePresignUploadError(error);
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        handlePresignUploadError(error);
+      }
       throw error;
     }
 
