@@ -3,10 +3,12 @@ import { ActionPanel } from './action-panel/ActionPanel';
 import { Workspace } from './workspace/Workspace';
 import { DevicePanel } from './device-panel/DevicePanel';
 import { useSocketConnection } from './hooks/useSocketConnection';
+import { usePushNotifications } from '../notifications/hooks/usePushNotifications';
 import './Dashboard.css';
 
 export function Dashboard() {
   useSocketConnection();
+  usePushNotifications();
   const [showDevices, setShowDevices] = useState(false);
 
   return (

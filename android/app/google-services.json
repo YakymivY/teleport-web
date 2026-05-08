@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "983977205864",
+    "project_id": "teleport-5ddf8",
+    "storage_bucket": "teleport-5ddf8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:983977205864:android:51041305862c661bac1bdd",
+        "android_client_info": {
+          "package_name": "com.teleport.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTKm4zm02WUkC23n7x3v53doy3lPvypTw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
