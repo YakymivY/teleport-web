@@ -31,7 +31,10 @@ export function DevicePanel() {
         if (cancelled) return;
         setDevices(devices);
         const currentSelectedDeviceId = useSelectedDeviceStore.getState().selectedDeviceId;
-        if (!currentSelectedDeviceId && devices[0]) {
+        const matchingDevice = devices.find((d) => d.id === currentSelectedDeviceId);
+        if (matchingDevice) {
+          useSelectedDeviceStore.getState().setSelectedDeviceName(matchingDevice.name);
+        } else if (devices[0]) {
           useSelectedDeviceStore.getState().setSelectedDeviceId(devices[0].id);
           useSelectedDeviceStore.getState().setSelectedDeviceName(devices[0].name);
         }
