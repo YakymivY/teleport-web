@@ -5,16 +5,20 @@ import type { TransferStatus } from '../../features/dashboard/models/transfer-st
 interface UploadStoreState {
   currentFiles: FileTransferResponse[];
   fileRefs: Record<string, File>;
+  fileProgress: Record<string, number>;
   upsertCurrentFile: (file: FileTransferResponse) => void;
   updateCurrentFileStatus: (id: string, status: TransferStatus) => void;
   removeCurrentFile: (id: string) => void;
   setFileRef: (id: string, file: File) => void;
   removeFileRef: (id: string) => void;
+  setFileProgress: (id: string, pct: number) => void;
+  removeFileProgress: (id: string) => void;
 }
 
 export const useUploadStore = create<UploadStoreState>((set) => ({
   currentFiles: [],
   fileRefs: {},
+  fileProgress: {},
   upsertCurrentFile: (file) =>
     set((state) => ({
       currentFiles: [file, ...state.currentFiles.filter((f) => f.id !== file.id)],
@@ -35,5 +39,12 @@ export const useUploadStore = create<UploadStoreState>((set) => ({
     set((state) => {
       const { [id]: _, ...rest } = state.fileRefs;
       return { fileRefs: rest };
+    }),
+  setFileProgress: (id, pct) =>
+    set((state) => ({ fileProgress: { ...state.fileProgress, [id]: pct } })),
+  removeFileProgress: (id) =>
+    set((state) => {
+      const { [id]: _, ...rest } = state.fileProgress;
+      return { fileProgress: rest };
     }),
 }));

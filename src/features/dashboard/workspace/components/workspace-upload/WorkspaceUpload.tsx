@@ -14,7 +14,7 @@ const isNativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() 
 
 export function WorkspaceUpload() {
   const resumeInputRef = useRef<HTMLInputElement>(null);
-  const { visibleTransfers, loading, deletingTransferId, handleDeleteTransfer, handleResumeUpload, handleResumeFileChange } =
+  const { visibleTransfers, loading, deletingTransferId, fileProgress, handleDeleteTransfer, handleResumeUpload, handleResumeFileChange } =
     useWorkspaceUpload();
   const { getRootProps, getInputProps, isDragActive } = useWorkspaceDropzone();
   const [selectedTransfer, setSelectedTransfer] = useState<FileTransferResponse | null>(null);
@@ -47,6 +47,8 @@ export function WorkspaceUpload() {
             const isInterrupted = transfer.status === TransferStatus.INTERRUPTED;
             const canDelete = !transfer.id.startsWith('local-') && !transfer.id.startsWith('interrupted-');
             const isDeleting = deletingTransferId === transfer.id;
+
+            const uploadPct = fileProgress[transfer.id];
 
             return (
               <div
@@ -81,7 +83,11 @@ export function WorkspaceUpload() {
                   <File size={50} />
                 </div>
                 <div className="workspace-upload-file-status" aria-hidden="true">
-                  <div className={`workspace-upload-file-status-fill ${statusClass}`} />
+                  {uploadPct !== undefined ? (
+                    <div className="workspace-upload-file-status-fill" style={{ width: `${uploadPct}%`, backgroundColor: '#0bb0ad' }} />
+                  ) : (
+                    <div className={`workspace-upload-file-status-fill ${statusClass}`} />
+                  )}
                 </div>
                 <Tooltip content={transfer.filename} side="bottom" delayDuration={1000}>
                   <div className="workspace-upload-file-name">{transfer.filename}</div>

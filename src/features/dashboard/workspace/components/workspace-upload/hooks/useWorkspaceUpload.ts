@@ -18,11 +18,14 @@ export function useWorkspaceUpload() {
 
   const currentFiles = useUploadStore((state) => state.currentFiles);
   const fileRefs = useUploadStore((state) => state.fileRefs);
+  const fileProgress = useUploadStore((state) => state.fileProgress);
   const upsertCurrentFile = useUploadStore((state) => state.upsertCurrentFile);
   const updateCurrentFileStatus = useUploadStore((state) => state.updateCurrentFileStatus);
   const removeCurrentFile = useUploadStore((state) => state.removeCurrentFile);
   const setFileRef = useUploadStore((state) => state.setFileRef);
   const removeFileRef = useUploadStore((state) => state.removeFileRef);
+  const setFileProgress = useUploadStore((state) => state.setFileProgress);
+  const removeFileProgress = useUploadStore((state) => state.removeFileProgress);
 
   const actions: StoreActions = useMemo(
     () => ({ upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile, setFileRef, removeFileRef }),
@@ -130,13 +133,21 @@ export function useWorkspaceUpload() {
       if (cachedFile) {
         // in-session: File object is still in memory, resume directly
         updateCurrentFileStatus(transfer.id, TransferStatus.PENDING);
-        void uploadLargeFile({ file: cachedFile, contentType: cachedFile.type || 'application/octet-stream', provisional: transfer }, actions)
+        setFileProgress(transfer.id, 0);
+        void uploadLargeFile(
+          { file: cachedFile, contentType: cachedFile.type || 'application/octet-stream', provisional: transfer },
+          actions,
+          (pct) => setFileProgress(transfer.id, pct),
+        )
           .then(() => {
             removeFileRef(transfer.id);
           })
           .catch(() => {
             updateCurrentFileStatus(transfer.id, TransferStatus.INTERRUPTED);
             toast.error('Upload interrupted. You can resume it later.');
+          })
+          .finally(() => {
+            removeFileProgress(transfer.id);
           });
       } else {
         // cross-session: File is gone, ask user to re-select it
@@ -144,7 +155,7 @@ export function useWorkspaceUpload() {
         inputRef.current?.click();
       }
     },
-    [fileRefs, actions, updateCurrentFileStatus, removeFileRef],
+    [fileRefs, actions, updateCurrentFileStatus, removeFileRef, setFileProgress, removeFileProgress],
   );
 
   const handleResumeFileChange = useCallback(
@@ -170,6 +181,7 @@ export function useWorkspaceUpload() {
     visibleTransfers,
     loading,
     deletingTransferId,
+    fileProgress,
     handleDeleteTransfer,
     handleResumeUpload,
     handleResumeFileChange,

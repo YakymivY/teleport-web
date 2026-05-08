@@ -13,7 +13,7 @@ import type { StoreActions } from '../types/StoreActions';
 import { handlePresignUploadError } from './handlePresignUploadError';
 import { getUploadCheckpoint, removeUploadCheckpoint, saveUploadCheckpoint } from './uploadCheckpoint';
 
-export async function uploadLargeFile(p: Provisional, actions: StoreActions): Promise<void> {
+export async function uploadLargeFile(p: Provisional, actions: StoreActions, onProgress?: (pct: number) => void): Promise<void> {
   const { upsertCurrentFile, updateCurrentFileStatus, removeCurrentFile } = actions;
 
   // mark file as actively uploading
@@ -76,6 +76,7 @@ export async function uploadLargeFile(p: Provisional, actions: StoreActions): Pr
 
     uploadedParts.push({ partNumber, etag });
     uploadedPartNumbers.add(partNumber);
+    onProgress?.(Math.floor((uploadedParts.length / totalParts) * 100));
 
     // persist progress right after each successful part upload
     saveUploadCheckpoint(uploadKey, {

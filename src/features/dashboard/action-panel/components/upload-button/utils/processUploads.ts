@@ -42,14 +42,19 @@ export async function processUploads(files: File[], actions: StoreActions): Prom
       await uploadSmallBatch(small, actions);
     }
 
+    const { setFileProgress, removeFileProgress } = useUploadStore.getState();
+
     for (const p of large) {
       setFileRef(p.provisional.id, p.file);
+      setFileProgress(p.provisional.id, 0);
       try {
-        await uploadLargeFile(p, actions);
+        await uploadLargeFile(p, actions, (pct) => setFileProgress(p.provisional.id, pct));
         removeFileRef(p.provisional.id);
       } catch (err) {
         updateCurrentFileStatus(p.provisional.id, TransferStatus.INTERRUPTED);
         toast.error('Upload interrupted. You can resume it later.');
+      } finally {
+        removeFileProgress(p.provisional.id);
       }
     }
 
