@@ -38,11 +38,11 @@ export function useWorkspaceUpload() {
 
   const resumingTransferRef = useRef<FileTransferResponse | null>(null);
 
-  // exclude server-fetched pending entries that are already represented by any active currentFiles entry
+  // exclude server-fetched entries that are already represented by any active currentFiles entry
   const dedupedTransfers = transfers.filter(
     (t) =>
       !(
-        t.status === TransferStatus.PENDING &&
+        (t.status === TransferStatus.PENDING || t.status === TransferStatus.INTERRUPTED) &&
         currentFiles.some((f) => f.filename === t.filename && f.sizeBytes === t.sizeBytes)
       ),
   );
@@ -64,20 +64,6 @@ export function useWorkspaceUpload() {
     }
   };
 
-  // hydrate interrupted uploads from localStorage on mount
-  useEffect(() => {
-    const interrupted = getInterruptedCheckpoints();
-    for (const entry of interrupted) {
-      const alreadyTracked = useUploadStore
-        .getState()
-        .currentFiles.some((f) => f.filename === entry.filename && f.sizeBytes === entry.sizeBytes);
-      if (!alreadyTracked) {
-        upsertCurrentFile(entry);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   useEffect(() => {
     let cancelled = false;
 
@@ -85,7 +71,18 @@ export function useWorkspaceUpload() {
       setLoading(true);
       try {
         const data = await fetchSourceFileTransfers();
-        if (!cancelled) setTransfers(data);
+        if (!cancelled) {
+          setTransfers(data);
+          const interrupted = getInterruptedCheckpoints();
+          for (const entry of interrupted) {
+            const alreadyTracked = useUploadStore
+              .getState()
+              .currentFiles.some((f) => f.filename === entry.filename && f.sizeBytes === entry.sizeBytes);
+            if (!alreadyTracked) {
+              upsertCurrentFile(entry);
+            }
+          }
+        }
       } catch {
         if (!cancelled) toast.error('Failed to load transferred files.');
       } finally {
@@ -98,6 +95,7 @@ export function useWorkspaceUpload() {
     return () => {
       cancelled = true;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileDeleted = useCallback((id: string) => {
