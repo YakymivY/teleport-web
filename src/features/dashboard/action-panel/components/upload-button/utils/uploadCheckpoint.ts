@@ -26,6 +26,15 @@ export function removeUploadCheckpoint(key: string): void {
   localStorage.removeItem(key);
 }
 
+export function clearAllUploadCheckpoints(): void {
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith('upload_')) keys.push(key);
+  }
+  keys.forEach((key) => localStorage.removeItem(key));
+}
+
 function isUploadCheckpoint(value: unknown): value is UploadCheckpoint {
   if (!value || typeof value !== 'object') {
     return false;

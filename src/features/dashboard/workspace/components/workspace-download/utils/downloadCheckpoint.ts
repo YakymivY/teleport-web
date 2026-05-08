@@ -27,6 +27,15 @@ export function removeDownloadCheckpoint(key: string): void {
   localStorage.removeItem(key);
 }
 
+export function clearAllDownloadCheckpoints(): void {
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(CHECKPOINT_KEY_PREFIX)) keys.push(key);
+  }
+  keys.forEach((key) => localStorage.removeItem(key));
+}
+
 function isDownloadCheckpoint(value: unknown): value is DownloadCheckpoint {
   if (!value || typeof value !== 'object') {
     return false;

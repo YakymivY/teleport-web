@@ -6,6 +6,7 @@ import { deleteFileTransfer, fetchSourceFileTransfers } from '../api/workspace-u
 import { useUploadStore } from '../../../../../../store/upload/useUploadStore';
 import { useFileDeletedEvent } from '../../../hooks/useFileDeletedEvent';
 import { getInterruptedCheckpoints } from '../../../../action-panel/components/upload-button/utils/getInterruptedCheckpoints';
+import { removeUploadCheckpoint } from '../../../../action-panel/components/upload-button/utils/uploadCheckpoint';
 import { uploadLargeFile } from '../../../../action-panel/components/upload-button/utils/uploadLargeFile';
 import { processUploads } from '../../../../action-panel/components/upload-button/utils/processUploads';
 import type { StoreActions } from '../../../../action-panel/components/upload-button/types/StoreActions';
@@ -94,7 +95,9 @@ export function useWorkspaceUpload() {
 
   const handleFileDeleted = useCallback((id: string) => {
     setTransfers((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+    removeUploadCheckpoint(`upload_${id}`);
+    removeCurrentFile(`interrupted-upload_${id}`);
+  }, [removeCurrentFile]);
 
   useFileDeletedEvent(handleFileDeleted);
 

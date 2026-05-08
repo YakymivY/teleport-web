@@ -3,6 +3,8 @@ import { logout } from "../../api/action-panel.api";
 import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { Modal } from "../../../../../ui/Modal";
+import { clearAllUploadCheckpoints } from "../upload-button/utils/uploadCheckpoint";
+import { clearAllDownloadCheckpoints } from "../../../../dashboard/workspace/components/workspace-download/utils/downloadCheckpoint";
 import './LogoutButton.css';
 
 export function LogoutButton() {
@@ -13,6 +15,8 @@ export function LogoutButton() {
 
   const cleanupAndRedirect = () => {
     localStorage.removeItem('token');
+    clearAllUploadCheckpoints();
+    clearAllDownloadCheckpoints();
     setIsModalOpen(false);
     navigate('/login', { replace: true });
   };

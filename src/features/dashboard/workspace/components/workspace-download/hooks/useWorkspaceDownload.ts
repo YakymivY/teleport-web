@@ -104,7 +104,12 @@ export function useWorkspaceDownload() {
   // handle file deleted event from the ws server
   const handleFileDeleted = useCallback((id: string) => {
     setTransfers((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+    removeDownloadCheckpoint(`${CHECKPOINT_KEY_PREFIX}${id}`);
+    removeCurrentFile(`${INTERRUPTED_ID_PREFIX}${id}`);
+    void removeOPFSEntry(id);
+    void removeCapacitorPartialFile(id);
+    void removeElectronPartialFile(id);
+  }, [removeCurrentFile]);
 
   useFileDeletedEvent(handleFileDeleted);
 
