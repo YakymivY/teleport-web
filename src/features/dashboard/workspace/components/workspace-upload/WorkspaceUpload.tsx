@@ -14,7 +14,7 @@ const isNativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() 
 
 export function WorkspaceUpload() {
   const resumeInputRef = useRef<HTMLInputElement>(null);
-  const { visibleTransfers, loading, deletingTransferId, fileProgress, uploadControllers, handleDeleteTransfer, handleCancelUpload, handleResumeUpload, handleResumeFileChange } =
+  const { visibleTransfers, loading, deletingTransferId, fileProgress, uploadControllers, handleDeleteTransfer, handleCancelUpload, handleDismissInterruptedUpload, handleResumeUpload, handleResumeFileChange } =
     useWorkspaceUpload();
   const { getRootProps, getInputProps, isDragActive } = useWorkspaceDropzone();
   const [selectedTransfer, setSelectedTransfer] = useState<FileTransferResponse | null>(null);
@@ -61,14 +61,24 @@ export function WorkspaceUpload() {
                   <div className="workspace-upload-file-deleting-overlay" aria-hidden="true" />
                 ) : null}
                 {isInterrupted ? (
-                  <button
-                    className="workspace-upload-file-resume"
-                    type="button"
-                    aria-label="Resume upload"
-                    onClick={(e) => { e.stopPropagation(); handleResumeUpload(transfer, resumeInputRef); }}
-                  >
-                    <RotateCcw size={14} strokeWidth={2.5} />
-                  </button>
+                  <>
+                    <button
+                      className="workspace-upload-file-dismiss"
+                      type="button"
+                      aria-label="Dismiss upload"
+                      onClick={(e) => { e.stopPropagation(); handleDismissInterruptedUpload(transfer); }}
+                    >
+                      <X size={14} strokeWidth={3} />
+                    </button>
+                    <button
+                      className="workspace-upload-file-resume"
+                      type="button"
+                      aria-label="Resume upload"
+                      onClick={(e) => { e.stopPropagation(); handleResumeUpload(transfer, resumeInputRef); }}
+                    >
+                      <RotateCcw size={14} strokeWidth={2.5} />
+                    </button>
+                  </>
                 ) : isUploading ? (
                   <button
                     className="workspace-upload-file-cancel"

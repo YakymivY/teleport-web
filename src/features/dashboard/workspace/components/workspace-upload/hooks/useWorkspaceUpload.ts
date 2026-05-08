@@ -134,6 +134,26 @@ export function useWorkspaceUpload() {
     uploadControllers[transferId]?.abort();
   }, [uploadControllers]);
 
+  const handleDismissInterruptedUpload = useCallback((transfer: FileTransferResponse) => {
+    const uploadKey = transfer.id.startsWith('interrupted-')
+      ? transfer.id.slice('interrupted-'.length)
+      : fileRefs[transfer.id]
+        ? `upload_${fileRefs[transfer.id].size}_${fileRefs[transfer.id].name}`
+        : null;
+
+    if (uploadKey) {
+      const checkpoint = getUploadCheckpoint(uploadKey);
+      if (checkpoint) {
+        removeUploadCheckpoint(uploadKey);
+        void abortMultipartUpload({ fileTransferId: checkpoint.fileTransferId, s3UploadId: checkpoint.s3UploadId });
+        setTransfers((prev) => prev.filter((t) => t.id !== checkpoint.fileTransferId));
+      }
+    }
+
+    removeFileRef(transfer.id);
+    removeCurrentFile(transfer.id);
+  }, [fileRefs, removeCurrentFile, removeFileRef]);
+
   const handleResumeUpload = useCallback(
     (transfer: FileTransferResponse, inputRef: RefObject<HTMLInputElement | null>) => {
       const cachedFile = fileRefs[transfer.id];
@@ -207,6 +227,7 @@ export function useWorkspaceUpload() {
     uploadControllers,
     handleDeleteTransfer,
     handleCancelUpload,
+    handleDismissInterruptedUpload,
     handleResumeUpload,
     handleResumeFileChange,
   };

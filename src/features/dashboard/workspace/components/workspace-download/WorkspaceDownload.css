@@ -110,6 +110,36 @@
   cursor: default;
 }
 
+.workspace-download-file-dismiss {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e6a817;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out, background-color 120ms ease-out;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.workspace-download-file:hover .workspace-download-file-dismiss {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.workspace-download-file-dismiss:hover {
+  background-color: rgba(230, 168, 23, 0.12);
+}
+
 .workspace-download-file-resume {
   position: absolute;
   top: 6px;

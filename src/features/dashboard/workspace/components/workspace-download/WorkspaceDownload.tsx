@@ -1,4 +1,4 @@
-import { Download, File, RotateCcw, Trash } from 'lucide-react';
+import { Download, File, RotateCcw, Trash, X } from 'lucide-react';
 import { useState } from 'react';
 import { Tooltip } from '../../../../../ui/Tooltip';
 import { TransferStatus } from '../../../models/transfer-status.enum';
@@ -47,15 +47,26 @@ export function WorkspaceDownload() {
                 onClick={() => setSelectedTransfer(transfer)}
               >
                 {isInterrupted ? (
-                  <button
-                    className="workspace-download-file-resume"
-                    type="button"
-                    aria-label="Resume download"
-                    onClick={(e) => { e.stopPropagation(); void handleResumeDownload(transfer); }}
-                    disabled={isDownloading}
-                  >
-                    <RotateCcw size={14} strokeWidth={2.5} />
-                  </button>
+                  <>
+                    <button
+                      className="workspace-download-file-dismiss"
+                      type="button"
+                      aria-label="Dismiss download"
+                      onClick={(e) => { e.stopPropagation(); void handleDeleteTransfer(transfer); }}
+                      disabled={isDeleting}
+                    >
+                      <X size={14} strokeWidth={3} />
+                    </button>
+                    <button
+                      className="workspace-download-file-resume"
+                      type="button"
+                      aria-label="Resume download"
+                      onClick={(e) => { e.stopPropagation(); void handleResumeDownload(transfer); }}
+                      disabled={isDownloading}
+                    >
+                      <RotateCcw size={14} strokeWidth={2.5} />
+                    </button>
+                  </>
                 ) : null}
 
                 <div className="workspace-download-file-preview" aria-hidden="true">
