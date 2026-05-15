@@ -13,6 +13,7 @@ import type { DownloadFileTransferParams } from '../types/DownloadFileTransferPa
 import { getMediaType } from '../utils/get-media-type.ts';
 import { uint8ToBase64 } from '../utils/uint8-to-base64.ts';
 import {
+  getDownloadCheckpoint,
   saveDownloadCheckpoint,
   removeDownloadCheckpoint,
   CHECKPOINT_KEY_PREFIX,
@@ -548,21 +549,21 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
   const url = new URL('/files/download', getApiBaseUrl());
   url.searchParams.set('fileTransferId', fileTransferId);
 
-  if (onProgress) onProgress(0);
-
   const filename = fallbackFilename ?? 'download.bin';
 
   // ── Electron ────────────────────────────────────────────────────────────────
   if (window.electronDownload) {
     const checkpointKey = `${CHECKPOINT_KEY_PREFIX}${fileTransferId}`;
 
-    // save an initial checkpoint so the interrupted indicator appears on restart
-    saveDownloadCheckpoint(checkpointKey, {
-      fileTransferId,
-      filename,
-      sizeBytes: fallbackTotalBytes ?? 0,
-      downloadedBytes: 0,
-    });
+    // create an initial checkpoint only if none exists yet, so resumes keep their real progress
+    if (!getDownloadCheckpoint(checkpointKey)) {
+      saveDownloadCheckpoint(checkpointKey, {
+        fileTransferId,
+        filename,
+        sizeBytes: fallbackTotalBytes ?? 0,
+        downloadedBytes: 0,
+      });
+    }
 
     // listen to progress events emitted by the main process during streaming
     const removeProgressListener = window.electronDownload.onProgress((data) => {
@@ -589,6 +590,7 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
       });
 
       if (result.status === 404) return false;
+      if (result.status === 409) throw Object.assign(new Error('Download already in progress'), { code: 'DOWNLOAD_IN_PROGRESS' as const });
       if (result.status === 401) handleUnauthorized();
       if (result.status < 200 || result.status >= 300) {
         throw new Error('Failed to start download.');

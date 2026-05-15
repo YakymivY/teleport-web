@@ -4,8 +4,10 @@ require('./rt/electron-rt');
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronS3', {
-  put: (params: { url: string; method?: string; headers: Record<string, string>; buffer: ArrayBuffer }) =>
+  put: (params: { requestId: string; url: string; method?: string; headers: Record<string, string>; buffer: ArrayBuffer }) =>
     ipcRenderer.invoke('electron-s3-put', params),
+  abort: (requestId: string) =>
+    ipcRenderer.invoke('electron-s3-abort', requestId),
 });
 
 contextBridge.exposeInMainWorld('electronDownload', {

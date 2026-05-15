@@ -51,10 +51,13 @@ export function WorkspaceUpload() {
 
             const uploadPct = fileProgress[transfer.id];
 
+            // Keep bar visible from the start of a large-file upload (progress starts at 0% which is invisible)
+            const displayPct = isUploading && uploadPct !== undefined ? Math.max(uploadPct, 3) : uploadPct;
+
             return (
               <div
                 key={transfer.id}
-                className={`workspace-upload-file ${isDeleting ? 'workspace-upload-file--deleting' : ''}`}
+                className={`workspace-upload-file${isDeleting ? ' workspace-upload-file--deleting' : ''}${isUploading ? ' workspace-upload-file--uploading' : ''}`}
                 onClick={() => setSelectedTransfer(transfer)}
               >
                 {isDeleting ? (
@@ -103,8 +106,8 @@ export function WorkspaceUpload() {
                   <File size={50} />
                 </div>
                 <div className="workspace-upload-file-status" aria-hidden="true">
-                  {uploadPct !== undefined ? (
-                    <div className="workspace-upload-file-status-fill" style={{ width: `${uploadPct}%`, backgroundColor: '#0bb0ad' }} />
+                  {displayPct !== undefined ? (
+                    <div className="workspace-upload-file-status-fill" style={{ width: `${displayPct}%`, backgroundColor: '#0bb0ad' }} />
                   ) : (
                     <div className={`workspace-upload-file-status-fill ${statusClass}`} />
                   )}

@@ -77,17 +77,34 @@ export async function cancelSingleUpload(params: { fileTransferId: string }): Pr
 declare global {
   interface Window {
     electronS3?: {
-      put: (params: { url: string; method?: string; headers: Record<string, string>; buffer: ArrayBuffer }) => Promise<{ status: number; etag: string | null }>;
+      put: (params: { requestId: string; url: string; method?: string; headers: Record<string, string>; buffer: ArrayBuffer }) => Promise<{ status: number; etag: string | null }>;
+      abort: (requestId: string) => Promise<void>;
     };
   }
 }
 
+async function electronS3Put(
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  buffer: ArrayBuffer,
+  signal?: AbortSignal,
+): Promise<{ status: number; etag: string | null }> {
+  if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
+  const requestId = crypto.randomUUID();
+  signal?.addEventListener('abort', () => void window.electronS3?.abort(requestId), { once: true });
+  const putPromise = window.electronS3!.put({ requestId, url, method, headers, buffer });
+  if (!signal) return putPromise;
+  const abortPromise = new Promise<never>((_, reject) =>
+    signal.addEventListener('abort', () => reject(new DOMException('Cancelled', 'AbortError')), { once: true }),
+  );
+  return Promise.race([putPromise, abortPromise]);
+}
+
 export async function uploadFileToPresignedUrl(url: string, headers: Record<string, string>, file: File, signal?: AbortSignal) {
-  // specific to electron
   if (window.electronS3) {
-    if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
     const buffer = await file.arrayBuffer();
-    const result = await window.electronS3.put({ url, headers, buffer });
+    const result = await electronS3Put(url, 'PUT', headers, buffer, signal);
     if (result.status < 200 || result.status >= 300) throw new Error('UPLOAD_FAILED');
     if (!result.etag) throw new Error('ETAG_MISSING');
     return result.etag;
@@ -120,9 +137,8 @@ export async function uploadChunkToPresignedUrl(
   signal?: AbortSignal,
 ) {
   if (window.electronS3) {
-    if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
     const buffer = await chunk.arrayBuffer();
-    const result = await window.electronS3.put({ url, method: method || 'PUT', headers: headers ?? {}, buffer });
+    const result = await electronS3Put(url, method || 'PUT', headers ?? {}, buffer, signal);
     if (result.status < 200 || result.status >= 300) throw new Error('UPLOAD_FAILED');
     if (!result.etag) throw new Error('ETAG_MISSING');
     return result.etag;
@@ -134,7 +150,7 @@ export async function uploadChunkToPresignedUrl(
     ? new Uint8Array(await chunk.arrayBuffer())
     : chunk;
 
-  const response = await fetch(url, { method: method || 'PUT', headers, body: fetchBody, signal });
+  const response = await fetch(url, { method: method || 'PUT', headers, body: fetchBody as BodyInit, signal });
 
   if (!response.ok) {
     throw new Error('UPLOAD_FAILED');

@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 export function getApiBaseUrl(): string {
   const configured: string = import.meta.env.VITE_API_URL ?? '';
   const pageHost = window.location.hostname;
-  if (pageHost !== 'localhost' && configured.includes('localhost')) {
+  if (pageHost !== 'localhost' && configured.includes('localhost') && !('electronS3' in window)) {
     return configured.replace('localhost', pageHost);
   }
   return configured;

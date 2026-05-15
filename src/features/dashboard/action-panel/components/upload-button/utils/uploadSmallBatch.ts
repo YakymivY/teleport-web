@@ -26,10 +26,11 @@ export async function uploadSmallBatch(small: Provisional[], actions: StoreActio
 
   const batch = small.map((p, idx) => {
     const presign = presigned[idx];
+    const controller = new AbortController();
     removeCurrentFile(p.provisional.id);
     upsertCurrentFile({ ...p.provisional, id: presign.id, status: TransferStatus.PENDING });
-    setUploadController(presign.id, new AbortController());
-    return { file: p.file, transferId: presign.id, url: presign.url, headers: presign.headers };
+    setUploadController(presign.id, controller);
+    return { file: p.file, transferId: presign.id, url: presign.url, headers: presign.headers, controller };
   });
 
   let uploaded: Array<{ id: string; etag: string }> = [];
@@ -38,7 +39,7 @@ export async function uploadSmallBatch(small: Provisional[], actions: StoreActio
 
     uploaded = await Promise.all(
       batch.map(async (b) => {
-        const etag = await uploadFileToPresignedUrl(b.url, b.headers, b.file, signal);
+        const etag = await uploadFileToPresignedUrl(b.url, b.headers, b.file, b.controller.signal);
         return { id: b.transferId, etag };
       }),
     );

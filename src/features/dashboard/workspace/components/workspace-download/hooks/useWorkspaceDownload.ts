@@ -147,7 +147,11 @@ export function useWorkspaceDownload() {
         setTransfers((prev) => prev.filter((t) => t.id !== fileTransferId));
         setDownloadedTransferIds((prev) => new Set([...prev, storeId]));
         toast.success(`Downloaded ${transfer.filename}`);
-      } catch {
+      } catch (err) {
+        if ((err as { code?: string }).code === 'DOWNLOAD_IN_PROGRESS') {
+          removeCurrentFile(storeId);
+          return;
+        }
         updateCurrentFileStatus(storeId, TransferStatus.INTERRUPTED);
         toast.error('Download interrupted. You can resume it later.');
       } finally {
