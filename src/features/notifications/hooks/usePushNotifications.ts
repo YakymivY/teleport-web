@@ -16,7 +16,7 @@ async function showLocalNotification(filename?: string) {
         id: Date.now() % 2147483647,
         title: 'New file available',
         body: filename ?? 'A file is ready to download',
-        channelId: 'push',
+        channelId: 'file_transfer',
       },
     ],
   });
@@ -31,9 +31,9 @@ export function usePushNotifications() {
       if (permission.receive !== 'granted') return;
 
       await LocalNotifications.createChannel({
-        id: 'push',
+        id: 'file_transfer',
         name: 'File transfers',
-        importance: 4,
+        importance: 5,
         vibration: true,
       });
 
