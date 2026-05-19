@@ -294,6 +294,30 @@
     height: 16px;
   }
 
+  .workspace-upload-file-resume {
+    position: static;
+    order: 3;
+    opacity: 1;
+    pointer-events: auto;
+    width: 24px;
+    height: 24px;
+  }
+
+  .workspace-upload-file-dismiss {
+    position: static;
+    order: 4;
+    opacity: 1;
+    pointer-events: auto;
+    width: 24px;
+    height: 24px;
+  }
+
+  .workspace-upload-file-resume svg,
+  .workspace-upload-file-dismiss svg {
+    width: 16px;
+    height: 16px;
+  }
+
   .workspace-upload-file-name {
     flex: 1;
     min-width: 0;
