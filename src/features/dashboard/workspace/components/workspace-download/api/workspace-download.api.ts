@@ -389,7 +389,33 @@ async function downloadFileCapacitorNative(params: {
 
   // move the completed partial file to its final destination
   const mediaType = getMediaType(filename);
-  const { uri: partialUri } = await Filesystem.getUri({ path: partialPath, directory: Directory.Cache });
+
+  // iOS PHKit (PHAssetChangeRequest.creationRequestForAsset*) determines the UTType from
+  // the file extension. The partial file has no extension, so rename it before saving to
+  // the gallery; fall back to the original path if the rename fails.
+  let finalPartialPath = partialPath;
+  if (Capacitor.getPlatform() === 'ios' && mediaType) {
+    const ext = filename.split('.').pop();
+    if (ext) {
+      const renamedPath = `${partialPath}.${ext}`;
+      try {
+        // Remove any stale renamed file left by a previous interrupted attempt so that
+        // Filesystem.rename doesn't fail with "destination already exists".
+        await Filesystem.deleteFile({ path: renamedPath, directory: Directory.Cache }).catch(() => {});
+        await Filesystem.rename({
+          from: partialPath,
+          directory: Directory.Cache,
+          to: renamedPath,
+          toDirectory: Directory.Cache,
+        });
+        finalPartialPath = renamedPath;
+      } catch {
+        // proceed with the original path
+      }
+    }
+  }
+
+  const { uri: partialUri } = await Filesystem.getUri({ path: finalPartialPath, directory: Directory.Cache });
 
   // save the file to the media library
   if (Capacitor.getPlatform() === 'android' && mediaType) {
@@ -398,29 +424,34 @@ async function downloadFileCapacitorNative(params: {
     try {
       await saveAndroidMediaToGallery(partialPath, filename, mediaType);
     } catch {
-      await copyToDocuments(partialPath, filename);
+      await copyToDocuments(finalPartialPath, filename);
     }
   } else if (mediaType === 'image') {
     // iOS
     try {
-      await Media.savePhoto({ path: partialUri });
+      const result = await Media.savePhoto({ path: partialUri });
+      // PHAssetChangeRequest returns nil (empty identifier) when it can't determine the
+      // UTType or the asset couldn't be created — treat this as a failure.
+      if (!result?.identifier) await copyToDocuments(finalPartialPath, filename);
     } catch {
-      await copyToDocuments(partialPath, filename);
+      await copyToDocuments(finalPartialPath, filename);
     }
   } else if (mediaType === 'video') {
     // iOS
     try {
-      await Media.saveVideo({ path: partialUri });
+      const result = await Media.saveVideo({ path: partialUri });
+      // Same phantom-success guard as savePhoto above.
+      if (!result?.identifier) await copyToDocuments(finalPartialPath, filename);
     } catch {
-      await copyToDocuments(partialPath, filename);
+      await copyToDocuments(finalPartialPath, filename);
     }
   } else {
     // copy the partial file to the documents directory
-    await copyToDocuments(partialPath, filename);
+    await copyToDocuments(finalPartialPath, filename);
   }
 
   // delete the partial file
-  await Filesystem.deleteFile({ path: partialPath, directory: Directory.Cache });
+  await Filesystem.deleteFile({ path: finalPartialPath, directory: Directory.Cache });
 
   // remove the checkpoint
   removeDownloadCheckpoint(checkpointKey);
