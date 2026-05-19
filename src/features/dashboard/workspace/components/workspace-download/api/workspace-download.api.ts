@@ -310,77 +310,131 @@ async function downloadFileCapacitorNative(params: {
       requestHeaders['Range'] = `bytes=${resumeFrom}-`;
     }
 
-    let response: Response;
-    try {
-      response = await fetch(url, { method: 'GET', headers: requestHeaders });
-    } catch (fetchErr) {
-      // The Range header is not CORS-safe and triggers a preflight OPTIONS request.
-      // If the server's Access-Control-Allow-Headers does not include Range, the
-      // preflight fails and fetch throws TypeError. Fall back to a full re-download
-      // from byte 0 so the download still completes (losing resume progress).
-      // The permanent fix is to add Range to Access-Control-Allow-Headers on the backend.
-      if (resumeFrom > 0) {
-        await Filesystem.deleteFile({ path: partialPath, directory: Directory.Cache }).catch(() => {});
-        delete requestHeaders['Range'];
-        resumeFrom = 0;
-        response = await fetch(url, { method: 'GET', headers: requestHeaders });
-      } else {
-        throw fetchErr;
-      }
-    }
+    if (Capacitor.getPlatform() === 'ios') {
+      // iOS: CapacitorHttp patches fetch/XHR to use native URLSession, but still
+      // buffers the full response before passing it back to JS. Neither API fires
+      // intermediate progress on iOS. Filesystem.downloadFile uses URLSession
+      // downloadTask and dispatches Capacitor plugin events in real-time as bytes
+      // arrive — these are not subject to the JS-bridge buffering limitation.
+      // Resume was never functional on iOS for the same reason (no partial commits).
 
-    // handle the response
-    if (response.status === 404) return false;
-    if (response.status === 401) handleUnauthorized();
+      // Always start fresh — delete any stale partial file
+      await Filesystem.deleteFile({ path: partialPath, directory: Directory.Cache }).catch(() => {});
 
-    if (response.status !== 200 && response.status !== 206) {
-      throw new Error('Failed to start download.');
-    }
+      const downloadHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+      const totalBytes = fallbackTotalBytes;
 
-    if (!response.body) {
-      throw new Error('Download stream is not available.');
-    }
+      saveDownloadCheckpoint(checkpointKey, { fileTransferId, filename, sizeBytes: totalBytes ?? 0, downloadedBytes: 0 });
+      if (onProgress) onProgress(0);
 
-    wasRangeRequest = response.status === 206;
-
-    // get the content length from the response headers
-    const contentLengthHeader = response.headers.get('content-length');
-    const contentLength = contentLengthHeader ? Number(contentLengthHeader) : undefined;
-    const totalBytes =
-      Number.isFinite(contentLength) && (contentLength ?? 0) > 0
-        ? resumeFrom + (contentLength ?? 0)
-        : fallbackTotalBytes;
-
-    // save the checkpoint
-    saveDownloadCheckpoint(checkpointKey, {
-      fileTransferId,
-      filename,
-      sizeBytes: totalBytes ?? 0,
-      downloadedBytes: resumeFrom,
-    });
-
-    // update the progress
-    if (onProgress) {
-      onProgress(totalBytes && totalBytes > 0 ? Math.floor((resumeFrom / totalBytes) * 100) : 0);
-    }
-
-    // stream the response body to the filesystem with periodic commits
-    await streamToFilesystemWithPeriodicCommits({
-      readable: response.body,
-      partialPath,
-      directory: Directory.Cache,
-      startBytes: resumeFrom,
-      totalBytes,
-      onProgress,
-      onCommit: (committedBytes) => {
+      const urlStr = url.toString();
+      const progressHandle = await Filesystem.addListener('progress', (status) => {
+        if (status.url !== urlStr) return;
+        if (status.contentLength > 0 && onProgress) {
+          onProgress(Math.min(100, Math.floor((status.bytes / status.contentLength) * 100)));
+        }
         saveDownloadCheckpoint(checkpointKey, {
           fileTransferId,
           filename,
-          sizeBytes: totalBytes ?? 0,
-          downloadedBytes: committedBytes,
+          sizeBytes: status.contentLength || totalBytes || 0,
+          downloadedBytes: status.bytes,
         });
-      },
-    });
+      });
+
+      try {
+        await Filesystem.downloadFile({
+          url: urlStr,
+          headers: downloadHeaders,
+          path: partialPath,
+          directory: Directory.Cache,
+          progress: true,
+          recursive: true,
+        });
+      } catch (dlErr) {
+        // Filesystem.downloadFile throws a generic "Error downloading file" for any non-200/206
+        // HTTP response. Identify 404 and 401 via a minimal Range request so callers get
+        // the correct behavior (return false for 404, redirect to login for 401).
+        if (String(dlErr).includes('Error downloading file')) {
+          const statusCheck = await fetch(url, { method: 'GET', headers: { ...downloadHeaders, Range: 'bytes=0-0' } }).catch(() => null);
+          if (statusCheck?.status === 404) return false;
+          if (statusCheck?.status === 401) handleUnauthorized();
+        }
+        throw dlErr;
+      } finally {
+        await progressHandle.remove();
+      }
+
+      wasRangeRequest = false;
+      if (onProgress) onProgress(100);
+    } else {
+      // Android: use fetch + streaming
+      let response: Response;
+      try {
+        response = await fetch(url, { method: 'GET', headers: requestHeaders });
+      } catch (fetchErr) {
+        // The Range header is not CORS-safe and triggers a preflight OPTIONS request.
+        // If the server's Access-Control-Allow-Headers does not include Range, the
+        // preflight fails and fetch throws TypeError. Fall back to a full re-download
+        // from byte 0 so the download still completes (losing resume progress).
+        // The permanent fix is to add Range to Access-Control-Allow-Headers on the backend.
+        if (resumeFrom > 0) {
+          await Filesystem.deleteFile({ path: partialPath, directory: Directory.Cache }).catch(() => {});
+          delete requestHeaders['Range'];
+          resumeFrom = 0;
+          response = await fetch(url, { method: 'GET', headers: requestHeaders });
+        } else {
+          throw fetchErr;
+        }
+      }
+
+      if (response.status === 404) return false;
+      if (response.status === 401) handleUnauthorized();
+
+      if (response.status !== 200 && response.status !== 206) {
+        throw new Error('Failed to start download.');
+      }
+
+      if (!response.body) {
+        throw new Error('Download stream is not available.');
+      }
+
+      wasRangeRequest = response.status === 206;
+
+      const contentLengthHeader = response.headers.get('content-length');
+      const contentLength = contentLengthHeader ? Number(contentLengthHeader) : undefined;
+      const totalBytes =
+        Number.isFinite(contentLength) && (contentLength ?? 0) > 0
+          ? resumeFrom + (contentLength ?? 0)
+          : fallbackTotalBytes;
+
+      saveDownloadCheckpoint(checkpointKey, {
+        fileTransferId,
+        filename,
+        sizeBytes: totalBytes ?? 0,
+        downloadedBytes: resumeFrom,
+      });
+
+      if (onProgress) {
+        onProgress(totalBytes && totalBytes > 0 ? Math.floor((resumeFrom / totalBytes) * 100) : 0);
+      }
+
+      await streamToFilesystemWithPeriodicCommits({
+        readable: response.body,
+        partialPath,
+        directory: Directory.Cache,
+        startBytes: resumeFrom,
+        totalBytes,
+        onProgress,
+        onCommit: (committedBytes) => {
+          saveDownloadCheckpoint(checkpointKey, {
+            fileTransferId,
+            filename,
+            sizeBytes: totalBytes ?? 0,
+            downloadedBytes: committedBytes,
+          });
+        },
+      });
+    }
   } else {
     // partial file is complete
     wasRangeRequest = true;
