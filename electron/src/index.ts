@@ -76,7 +76,7 @@ const PARTIAL_DOWNLOADS_DIR = 'partial_downloads';
 const COMMIT_INTERVAL_BYTES = 5 * 1024 * 1024;
 
 const pendingS3Requests = new Map<string, ReturnType<typeof net.request>>();
-const activeDownloads = new Set<string>();
+const activeRequests = new Map<string, ReturnType<typeof net.request>>();
 
 
 ipcMain.handle('electron-s3-put', (_event, { requestId, url, method = 'PUT', headers, buffer }: { requestId: string; url: string; method?: string; headers: Record<string, string>; buffer: ArrayBuffer }) => {
@@ -129,11 +129,24 @@ function uniqueDownloadPath(dir: string, filename: string): string {
 }
 
 ipcMain.handle('electron-download', (event, { url, headers, filename, fileTransferId }: { url: string; headers: Record<string, string>; filename: string; fileTransferId: string }) => {
-  if (activeDownloads.has(fileTransferId)) {
+  if (activeRequests.has(fileTransferId)) {
     return Promise.resolve({ status: 409, wasRangeRequest: false });
   }
-  activeDownloads.add(fileTransferId);
   return new Promise<{ status: number; wasRangeRequest: boolean }>((resolve, reject) => {
+    let settled = false;
+    const safeResolve = (value: { status: number; wasRangeRequest: boolean }) => {
+      if (settled) return;
+      settled = true;
+      activeRequests.delete(fileTransferId);
+      resolve(value);
+    };
+    const safeReject = (err: Error) => {
+      if (settled) return;
+      settled = true;
+      activeRequests.delete(fileTransferId);
+      reject(err);
+    };
+
     const partialDir = path.join(app.getPath('userData'), PARTIAL_DOWNLOADS_DIR);
     fs.mkdirSync(partialDir, { recursive: true });
     const partialPath = path.join(partialDir, fileTransferId);
@@ -155,11 +168,15 @@ ipcMain.handle('electron-download', (event, { url, headers, filename, fileTransf
       req.setHeader(k, v);
     }
 
+    activeRequests.set(fileTransferId, req);
+
     // handle the response
     req.on('response', (res) => {
       if (res.statusCode !== 200 && res.statusCode !== 206) {
         res.on('data', () => { });
-        res.on('end', () => resolve({ status: res.statusCode, wasRangeRequest: false }));
+        res.on('end', () => {
+          safeResolve({ status: res.statusCode, wasRangeRequest: false });
+        });
         return;
       }
 
@@ -205,25 +222,35 @@ ipcMain.handle('electron-download', (event, { url, headers, filename, fileTransf
 
       // handle the end of the response
       res.on('end', () => {
-        const totalWritten = resumeFrom + writtenInThisSession;
         fileStream.end(() => {
           // copy the partial file to the downloads directory
           const downloadPath = uniqueDownloadPath(app.getPath('downloads'), filename);
           fs.copyFile(partialPath, downloadPath, (copyErr) => {
-            activeDownloads.delete(fileTransferId);
-            if (copyErr) { reject(copyErr); return; }
+            if (copyErr) { safeReject(copyErr); return; }
             fs.unlink(partialPath, () => { });
-            resolve({ status: res.statusCode, wasRangeRequest });
+            safeResolve({ status: res.statusCode, wasRangeRequest });
           });
         });
       });
 
-      res.on('error', (err) => { activeDownloads.delete(fileTransferId); fileStream.destroy(); reject(err); });
+      res.on('error', (err) => { fileStream.destroy(); safeReject(err); });
     });
 
-    req.on('error', (err) => { activeDownloads.delete(fileTransferId); reject(err); });
+    req.on('abort', () => {
+      safeReject(new Error('ABORTED'));
+    });
+    req.on('error', (err) => {
+      safeReject(err);
+    });
     req.end();
   });
+});
+
+ipcMain.handle('electron-download-cancel', (_event, fileTransferId: string) => {
+  const req = activeRequests.get(fileTransferId);
+  if (req) {
+    req.abort();
+  }
 });
 
 ipcMain.handle('electron-download-remove-partial', (_event, fileTransferId: string) => {

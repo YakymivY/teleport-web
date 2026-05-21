@@ -3,4 +3,5 @@ export type DownloadFileTransferParams = {
   fallbackFilename?: string;
   fallbackTotalBytes?: number;
   onProgress?: (percent: number) => void;
+  signal?: AbortSignal;
 };

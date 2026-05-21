@@ -23,6 +23,7 @@ declare global {
   interface Window {
     electronDownload?: {
       download: (params: { url: string; headers: Record<string, string>; filename: string; fileTransferId: string }) => Promise<{ status: number; wasRangeRequest: boolean }>;
+      cancel: (fileTransferId: string) => Promise<void>;
       removePartialFile: (fileTransferId: string) => Promise<void>;
       onProgress: (callback: (data: { fileTransferId: string; downloadedBytes: number; totalBytes: number }) => void) => () => void;
     };
@@ -274,8 +275,9 @@ async function downloadFileCapacitorNative(params: {
   filename: string;
   fallbackTotalBytes?: number;
   onProgress?: (percent: number) => void;
+  signal?: AbortSignal;
 }): Promise<boolean> {
-  const { url, token, fileTransferId, filename, fallbackTotalBytes, onProgress } = params;
+  const { url, token, fileTransferId, filename, fallbackTotalBytes, onProgress, signal } = params;
 
   // ensure the staging directory exists
   await Filesystem.mkdir({
@@ -341,16 +343,29 @@ async function downloadFileCapacitorNative(params: {
         });
       });
 
+      const abortPromise = new Promise<never>((_, reject) => {
+        signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      });
+
       try {
-        await Filesystem.downloadFile({
-          url: urlStr,
-          headers: downloadHeaders,
-          path: partialPath,
-          directory: Directory.Cache,
-          progress: true,
-          recursive: true,
-        });
+        await Promise.race([
+          Filesystem.downloadFile({
+            url: urlStr,
+            headers: downloadHeaders,
+            path: partialPath,
+            directory: Directory.Cache,
+            progress: true,
+            recursive: true,
+          }),
+          abortPromise,
+        ]);
       } catch (dlErr) {
+        if (dlErr instanceof DOMException && dlErr.name === 'AbortError') {
+          await progressHandle.remove();
+          await Filesystem.deleteFile({ path: partialPath, directory: Directory.Cache }).catch(() => {});
+          removeDownloadCheckpoint(checkpointKey);
+          throw dlErr;
+        }
         // Filesystem.downloadFile throws a generic "Error downloading file" for any non-200/206
         // HTTP response. Identify 404 and 401 via a minimal Range request so callers get
         // the correct behavior (return false for 404, redirect to login for 401).
@@ -370,8 +385,9 @@ async function downloadFileCapacitorNative(params: {
       // Android: use fetch + streaming
       let response: Response;
       try {
-        response = await fetch(url, { method: 'GET', headers: requestHeaders });
+        response = await fetch(url, { method: 'GET', headers: requestHeaders, signal });
       } catch (fetchErr) {
+        if (fetchErr instanceof DOMException && fetchErr.name === 'AbortError') throw fetchErr;
         // The Range header is not CORS-safe and triggers a preflight OPTIONS request.
         // If the server's Access-Control-Allow-Headers does not include Range, the
         // preflight fails and fetch throws TypeError. Fall back to a full re-download
@@ -381,7 +397,7 @@ async function downloadFileCapacitorNative(params: {
           await Filesystem.deleteFile({ path: partialPath, directory: Directory.Cache }).catch(() => {});
           delete requestHeaders['Range'];
           resumeFrom = 0;
-          response = await fetch(url, { method: 'GET', headers: requestHeaders });
+          response = await fetch(url, { method: 'GET', headers: requestHeaders, signal });
         } else {
           throw fetchErr;
         }
@@ -418,22 +434,30 @@ async function downloadFileCapacitorNative(params: {
         onProgress(totalBytes && totalBytes > 0 ? Math.floor((resumeFrom / totalBytes) * 100) : 0);
       }
 
-      await streamToFilesystemWithPeriodicCommits({
-        readable: response.body,
-        partialPath,
-        directory: Directory.Cache,
-        startBytes: resumeFrom,
-        totalBytes,
-        onProgress,
-        onCommit: (committedBytes) => {
-          saveDownloadCheckpoint(checkpointKey, {
-            fileTransferId,
-            filename,
-            sizeBytes: totalBytes ?? 0,
-            downloadedBytes: committedBytes,
-          });
-        },
-      });
+      try {
+        await streamToFilesystemWithPeriodicCommits({
+          readable: response.body,
+          partialPath,
+          directory: Directory.Cache,
+          startBytes: resumeFrom,
+          totalBytes,
+          onProgress,
+          onCommit: (committedBytes) => {
+            saveDownloadCheckpoint(checkpointKey, {
+              fileTransferId,
+              filename,
+              sizeBytes: totalBytes ?? 0,
+              downloadedBytes: committedBytes,
+            });
+          },
+        });
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') {
+          removeDownloadCheckpoint(checkpointKey);
+          await Filesystem.deleteFile({ path: partialPath, directory: Directory.Cache }).catch(() => {});
+        }
+        throw e;
+      }
     }
   } else {
     // partial file is complete
@@ -530,8 +554,9 @@ async function downloadFileWeb(params: {
   filename: string;
   fallbackTotalBytes?: number;
   onProgress?: (percent: number) => void;
+  signal?: AbortSignal;
 }): Promise<boolean> {
-  const { url, token, fileTransferId, filename, fallbackTotalBytes, onProgress } = params;
+  const { url, token, fileTransferId, filename, fallbackTotalBytes, onProgress, signal } = params;
 
   const checkpointKey = `${CHECKPOINT_KEY_PREFIX}${fileTransferId}`;
 
@@ -550,7 +575,7 @@ async function downloadFileWeb(params: {
   }
 
   // fetch the file from the backend
-  const response = await fetch(url, { method: 'GET', headers: requestHeaders });
+  const response = await fetch(url, { method: 'GET', headers: requestHeaders, signal });
 
   // handle the response
   if (response.status === 404) return false;
@@ -584,22 +609,30 @@ async function downloadFileWeb(params: {
     totalBytes && totalBytes > 0 ? Math.floor((actualResumeFrom / totalBytes) * 100) : 0,
   );
 
-  // streams response body into OPFS with periodic commits so a tab close only loses the last interval
-  await streamToOPFSWithPeriodicCommits({
-    readable: response.body,
-    fileHandle,
-    startBytes: actualResumeFrom,
-    totalBytes,
-    onProgress,
-    onCommit: (committedBytes) => {
-      saveDownloadCheckpoint(checkpointKey, {
-        fileTransferId,
-        filename,
-        sizeBytes: totalBytes ?? 0,
-        downloadedBytes: committedBytes,
-      });
-    },
-  });
+  try {
+    // streams response body into OPFS with periodic commits so a tab close only loses the last interval
+    await streamToOPFSWithPeriodicCommits({
+      readable: response.body,
+      fileHandle,
+      startBytes: actualResumeFrom,
+      totalBytes,
+      onProgress,
+      onCommit: (committedBytes) => {
+        saveDownloadCheckpoint(checkpointKey, {
+          fileTransferId,
+          filename,
+          sizeBytes: totalBytes ?? 0,
+          downloadedBytes: committedBytes,
+        });
+      },
+    });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      removeDownloadCheckpoint(checkpointKey);
+      await opfsRoot.removeEntry(fileTransferId).catch(() => {});
+    }
+    throw e;
+  }
 
   // trigger the native browser download from the completed OPFS file
   const completedFile = await fileHandle.getFile();
@@ -629,7 +662,7 @@ async function downloadFileWeb(params: {
 }
 
 export async function downloadFileTransfer(params: DownloadFileTransferParams): Promise<boolean> {
-  const { fileTransferId, fallbackFilename, fallbackTotalBytes, onProgress } = params;
+  const { fileTransferId, fallbackFilename, fallbackTotalBytes, onProgress, signal } = params;
   const token = localStorage.getItem('token');
   const url = new URL('/files/download', getApiBaseUrl());
   url.searchParams.set('fileTransferId', fileTransferId);
@@ -666,6 +699,9 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
       }
     });
 
+    const onAbort = () => { void window.electronDownload?.cancel(fileTransferId); };
+    signal?.addEventListener('abort', onAbort);
+
     try {
       const result = await window.electronDownload.download({
         url: url.toString(),
@@ -673,6 +709,12 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
         filename,
         fileTransferId,
       });
+
+      if (signal?.aborted) {
+        removeDownloadCheckpoint(checkpointKey);
+        await removeElectronPartialFile(fileTransferId);
+        throw new DOMException('Aborted', 'AbortError');
+      }
 
       if (result.status === 404) return false;
       if (result.status === 409) throw Object.assign(new Error('Download already in progress'), { code: 'DOWNLOAD_IN_PROGRESS' as const });
@@ -694,16 +736,28 @@ export async function downloadFileTransfer(params: DownloadFileTransferParams): 
       }
 
       return true;
+    } catch (err) {
+      const isAbort =
+        signal?.aborted ||
+        (err instanceof DOMException && err.name === 'AbortError') ||
+        (err instanceof Error && err.message === 'ABORTED');
+      if (isAbort) {
+        removeDownloadCheckpoint(checkpointKey);
+        await removeElectronPartialFile(fileTransferId);
+        throw new DOMException('Aborted', 'AbortError');
+      }
+      throw err;
     } finally {
+      signal?.removeEventListener('abort', onAbort);
       removeProgressListener();
     }
   }
 
   // ── Capacitor iOS / Android (resumable via fetch + Filesystem) ─────────────
   if (Capacitor.isNativePlatform()) {
-    return downloadFileCapacitorNative({ url, token, fileTransferId, filename, fallbackTotalBytes, onProgress });
+    return downloadFileCapacitorNative({ url, token, fileTransferId, filename, fallbackTotalBytes, onProgress, signal });
   }
 
   // ── Web browser (OPFS + native download trigger) ─────────────────────────────
-  return downloadFileWeb({ url, token, fileTransferId, filename, fallbackTotalBytes, onProgress });
+  return downloadFileWeb({ url, token, fileTransferId, filename, fallbackTotalBytes, onProgress, signal });
 }

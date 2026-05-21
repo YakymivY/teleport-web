@@ -170,6 +170,36 @@
   background-color: rgba(230, 168, 23, 0.12);
 }
 
+.workspace-download-file-cancel {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0bb0ad;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out, background-color 120ms ease-out;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.workspace-download-file:hover .workspace-download-file-cancel {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.workspace-download-file-cancel:hover {
+  background-color: rgba(11, 176, 173, 0.12);
+}
+
 .workspace-download-file-progress {
   position: relative;
   width: 60%;
@@ -316,6 +346,20 @@
 
   .workspace-download-file-resume svg,
   .workspace-download-file-dismiss svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .workspace-download-file-cancel {
+    position: static;
+    order: 3;
+    opacity: 1;
+    pointer-events: auto;
+    width: 24px;
+    height: 24px;
+  }
+
+  .workspace-download-file-cancel svg {
     width: 16px;
     height: 16px;
   }

@@ -17,6 +17,7 @@ export function WorkspaceDownload() {
     deletingTransferId,
     handleDownload,
     handleResumeDownload,
+    handleCancelDownload,
     handleDownloadAll,
     handleDeleteTransfer,
   } = useWorkspaceDownload();
@@ -67,6 +68,15 @@ export function WorkspaceDownload() {
                       <RotateCcw size={14} strokeWidth={2.5} />
                     </button>
                   </>
+                ) : isDownloading ? (
+                  <button
+                    className="workspace-download-file-cancel"
+                    type="button"
+                    aria-label="Cancel download"
+                    onClick={(e) => { e.stopPropagation(); handleCancelDownload(); }}
+                  >
+                    <X size={14} strokeWidth={3} />
+                  </button>
                 ) : null}
 
                 <div className="workspace-download-file-preview" aria-hidden="true">

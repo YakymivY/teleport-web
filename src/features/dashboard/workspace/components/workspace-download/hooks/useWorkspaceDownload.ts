@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { TransferStatus } from '../../../../models/transfer-status.enum';
 import type { FileTransferResponse } from '../../../../models/FileTransferResponse';
@@ -36,6 +36,7 @@ export function useWorkspaceDownload() {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadedTransferIds, setDownloadedTransferIds] = useState<Set<string>>(() => new Set());
   const [deletingTransferId, setDeletingTransferId] = useState<string | null>(null);
+  const downloadControllerRef = useRef<AbortController | null>(null);
 
   const currentFiles = useDownloadStore((state) => state.currentFiles);
   const upsertCurrentFile = useDownloadStore((state) => state.upsertCurrentFile);
@@ -125,6 +126,9 @@ export function useWorkspaceDownload() {
         ? Math.floor((checkpoint.downloadedBytes / transfer.sizeBytes) * 100)
         : 0;
 
+      const controller = new AbortController();
+      downloadControllerRef.current = controller;
+
       setDownloadingTransferId(storeId);
       setDownloadProgress(initialProgress);
       upsertCurrentFile({ ...transfer, status: TransferStatus.PENDING });
@@ -135,6 +139,7 @@ export function useWorkspaceDownload() {
           fallbackFilename: transfer.filename,
           fallbackTotalBytes: transfer.sizeBytes,
           onProgress: setDownloadProgress,
+          signal: controller.signal,
         });
 
         if (!ok) {
@@ -148,6 +153,10 @@ export function useWorkspaceDownload() {
         setDownloadedTransferIds((prev) => new Set([...prev, storeId]));
         toast.success(`Downloaded ${transfer.filename}`);
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          removeCurrentFile(storeId);
+          return;
+        }
         if ((err as { code?: string }).code === 'DOWNLOAD_IN_PROGRESS') {
           removeCurrentFile(storeId);
           return;
@@ -155,11 +164,16 @@ export function useWorkspaceDownload() {
         updateCurrentFileStatus(storeId, TransferStatus.INTERRUPTED);
         toast.error('Download interrupted. You can resume it later.');
       } finally {
+        downloadControllerRef.current = null;
         setDownloadingTransferId((prev) => (prev === storeId ? null : prev));
       }
     },
     [upsertCurrentFile, removeCurrentFile, updateCurrentFileStatus],
   );
+
+  const handleCancelDownload = useCallback(() => {
+    downloadControllerRef.current?.abort();
+  }, []);
 
   // download all files
   const handleDownloadAll = useCallback(async () => {
@@ -200,6 +214,7 @@ export function useWorkspaceDownload() {
     deletingTransferId,
     handleDownload: runDownload,
     handleResumeDownload: runDownload,
+    handleCancelDownload,
     handleDownloadAll,
     handleDeleteTransfer,
   };

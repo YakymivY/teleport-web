@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('electronS3', {
 contextBridge.exposeInMainWorld('electronDownload', {
   download: (params: { url: string; headers: Record<string, string>; filename: string; fileTransferId: string }) =>
     ipcRenderer.invoke('electron-download', params),
+  cancel: (fileTransferId: string) =>
+    ipcRenderer.invoke('electron-download-cancel', fileTransferId),
   removePartialFile: (fileTransferId: string) =>
     ipcRenderer.invoke('electron-download-remove-partial', fileTransferId),
   onProgress: (callback: (data: { fileTransferId: string; downloadedBytes: number; totalBytes: number }) => void) => {
