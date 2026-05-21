@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: 'teleport',
   webDir: 'dist',
   server: {
-    url: 'http://localhost:5173',
+    // url: 'http://localhost:5173',
+    url: 'http://10.0.2.2:5173',
     cleartext: true,
   },
   plugins: {

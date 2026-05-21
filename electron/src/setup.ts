@@ -207,9 +207,6 @@ export class ElectronCapacitorApp {
         this.MainWindow.show();
       }
       setTimeout(() => {
-        if (electronIsDev) {
-          this.MainWindow.webContents.openDevTools();
-        }
         CapElectronEventEmitter.emit('CAPELECTRON_DeeplinkListenerInitialized', '');
       }, 400);
     });
@@ -224,8 +221,8 @@ export function setupContentSecurityPolicy(customScheme: string): void {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           electronIsDev
-            ? `default-src ${customScheme}://* 'unsafe-inline' devtools://* 'unsafe-eval' data:; connect-src ${customScheme}://* http://localhost:* ws://localhost:* http://16.16.110.154:* devtools://* https:`
-            : `default-src ${customScheme}://* 'unsafe-inline' data:; connect-src ${customScheme}://* http://localhost:* ws://localhost:* http://16.16.110.154:* https:`,
+            ? `default-src ${customScheme}://* 'unsafe-inline' devtools://* 'unsafe-eval' data:; connect-src ${customScheme}://* http://localhost:* ws://localhost:* http://51.21.244.52:* devtools://* https:`
+            : `default-src ${customScheme}://* 'unsafe-inline' data:; connect-src ${customScheme}://* http://localhost:* ws://localhost:* http://51.21.244.52:* https:`,
         ],
       },
     });
