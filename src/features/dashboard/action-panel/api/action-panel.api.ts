@@ -144,10 +144,14 @@ export async function uploadChunkToPresignedUrl(
     return result.etag;
   }
 
-  // Capacitor's native-bridge convertBody does not handle Blob (falls back to JSON.stringify → "{}").
-  // Uint8Array is correctly handled as raw binary. Convert on native to avoid corrupt uploads.
-  const fetchBody: Blob | Uint8Array = Capacitor.isNativePlatform()
-    ? new Uint8Array(await chunk.arrayBuffer())
+  // CapacitorHttp (enabled in capacitor.config.ts) patches fetch for all non-GET requests.
+  // Its convertBody() path for Uint8Array runs new TextDecoder().decode() on the raw bytes,
+  // which corrupts binary data by replacing invalid UTF-8 sequences with U+FFFD (3 bytes each).
+  // The only path that correctly preserves binary is body instanceof File: readFileAsBase64 →
+  // native Base64.decode → raw bytes to S3. Wrap the chunk in a File on native to use that path.
+  const contentTypeHeader = headers?.['Content-Type'] ?? headers?.['content-type'] ?? 'application/octet-stream';
+  const fetchBody: File | Blob = Capacitor.isNativePlatform()
+    ? new File([chunk], 'chunk', { type: contentTypeHeader })
     : chunk;
 
   const response = await fetch(url, { method: method || 'PUT', headers, body: fetchBody as BodyInit, signal });
