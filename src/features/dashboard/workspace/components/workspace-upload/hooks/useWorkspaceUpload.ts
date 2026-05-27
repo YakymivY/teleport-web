@@ -129,8 +129,21 @@ export function useWorkspaceUpload() {
   }, [currentFiles, removeCurrentFile]);
 
   const handleCancelUpload = useCallback((transferId: string) => {
+    const file = currentFiles.find((f) => f.id === transferId);
     uploadControllers[transferId]?.abort();
-  }, [uploadControllers]);
+    if (file) {
+      setTransfers((prev) =>
+        prev.filter(
+          (t) =>
+            !(
+              t.filename === file.filename &&
+              t.sizeBytes === file.sizeBytes &&
+              (t.status === TransferStatus.PENDING || t.status === TransferStatus.INTERRUPTED)
+            ),
+        ),
+      );
+    }
+  }, [uploadControllers, currentFiles]);
 
   const handleDismissInterruptedUpload = useCallback((transfer: FileTransferResponse) => {
     const uploadKey = transfer.id.startsWith('interrupted-')
